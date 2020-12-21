@@ -12,6 +12,7 @@ A friend noted that there is a TI Chip CC1101 which can be used (from the datash
 * Industrial monitoring and control
 * ...
 In addition it can handle ASK modulation which is the used modulation technique for UHF RFID. So this sounds promising and theoretically one should be able to do at least the same as with the above mentioned SDR solution avoiding the reliability issues.
+Also there exists an Arduino library for the CC1101. Therefore using an Arduino (e.g. the Nano) for controlling and programming the CC1101 seems like a straightforward choice.
 
 ## Roadblock(s)
 There are a few roadblocks on getting to a working solution. The first and most important one would be that even though a could reproduce the above mentioned SDR solution I actually have only negligible experience with RF not even talking about how the CC1101 works and how it can "programmed" to do my bidding. Which means there will be (and already was as I am already in the middle of it) tons of research and learning necessary on the way. That is the main reason I started this block hoping someone will stumple accross it and perhaps see the mistakes I made (and believe me I did a lot already) and perhaps she has some additional insight and can give me some helpful advice.
