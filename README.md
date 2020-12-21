@@ -34,6 +34,7 @@ Helpful resources
 * https://e2e.ti.com/support/wireless-connectivity/other-wireless/f/667/t/157309
 * https://home.zhaw.ch/~kunr/NTM1/praktikum/standards_and_literature/E2E_chapter03-rfid-handbook.pdf
 * https://greatscottgadgets.com/sdr/
+* https://www.ti.com/product/CC1101?keyMatch=ASK%20MODULATION%20CC1101&tisearch=Search-EN-everything&usecase=GPN
 
 ## Hardware
 I am currently using the following hardware:
