@@ -78,4 +78,5 @@ After some trial and error and getting the coding to work properly I finally got
 The current full signal is (1500µs settle-time for the tag + query command + 250µs cw + x times queryrep with cw + powerdown) and this sending out repeatedly.
 I do monitor the signals with the HackRF. I checked the SDR solution and there I can clearly see the tag response to the query/queryrep. So I will need to do some more analyzing of the SDR solution to see if I am still missing something. (if you have any idea on why I do not getting a signal, feel free to drop me a message).
 ![query signal](https://github.com/zaphoxx/zuhf-rfid/blob/main/query-signal.jpg)
+![full sequence](https://github.com/zaphoxx/zuhf-rfid/blob/main/query_queryrep-sequence.jpg)
 
