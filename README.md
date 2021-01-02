@@ -50,10 +50,15 @@ I am currently using the following hardware:
 To operate the CC1101 you have to set registers to the appropriate values. It can be very confusing on how the registers need to be setup and the cc1101 datasheet is quite impressive but the explanations in the documentation are mainly targeted towards a reader that already understands how these things work in general. However an approach that was quite helpful was to use the smartRF software to find some basic settings and then manually adjust some additional registers as needed.
 
 To get an idea of the settings needed for UHF RFID in general the specification for gs1-epc-gen2v2-uhf can be used as guideline (https://www.gs1.org/sites/default/files/docs/epc/gs1-epc-gen2v2-uhf-airinterface_i21_r_2018-09-04.pdf).
+
+![ASK Envelope](https://github.com/zaphoxx/zuhf-rfid/blob/main/ASK-Modulation-RF-envelope.png)
+![POWERDOWN/UP](https://github.com/zaphoxx/zuhf-rfid/blob/main/powerdownup-waveform-parameters.png)
+
 ```
   CC1101 Freq = 868MHz
   CC1101 DataRate = 80kBaud
   CC1101 Modulation = ASK/OOK
+  byte paTable[8] = {0x27,0xc0,0x00,0x00,0x00,0x00,0x00,0x00};
 
   1 Pulsewidth = 12.5µs
   1 TARI = 25µs (DATA0)
