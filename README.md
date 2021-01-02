@@ -52,8 +52,11 @@ To operate the CC1101 you have to set registers to the appropriate values. It ca
 To get an idea of the settings needed for UHF RFID in general the specification for gs1-epc-gen2v2-uhf can be used as guideline (https://www.gs1.org/sites/default/files/docs/epc/gs1-epc-gen2v2-uhf-airinterface_i21_r_2018-09-04.pdf).
 
 ![ASK Envelope](https://github.com/zaphoxx/zuhf-rfid/blob/main/ASK-Modulation-RF-envelope.png)
+
 ![POWERDOWN/UP](https://github.com/zaphoxx/zuhf-rfid/blob/main/powerdownup-waveform-parameters.png)
+
 ![PIE Symbols](https://github.com/zaphoxx/zuhf-rfid/blob/main/PIE-Symbols.png)
+
 ```
   CC1101 Freq = 868MHz
   CC1101 DataRate = 80kBaud
