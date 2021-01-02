@@ -71,4 +71,11 @@ To get an idea of the settings needed for UHF RFID in general the specification 
   const byte RTCAL[] = {1,1,1,1,1,0}; // length of (data0 + data1)
   const byte TRCAL[] = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,0}; // max 3 * length(RTCAL) 16*12.5µs = 200µs --> BLF = 8/200µs = 40kHz
 ```
+To make live easier I ordered a very simply pcb to have the arduino and the cc1101 module properly connected and soldered on the same board.
+![pcb board setup](https://github.com/zaphoxx/zuhf-rfid/blob/main/rfid-setup.jpg)
+
+After some trial and error and getting the coding to work properly I finally got a query signal going out. Unfortunately I do not get a RN16 response from tag. This is the point where I seem to hit a brick wall. From what I can say the settings look good. I also tried to send out a query followed by several queryrep commands but nothing seems to get the tag to give me any response. (see query signal below). 
+The current full signal is (1500µs settle-time for the tag + query command + 250µs cw + x times queryrep with cw + powerdown) and this sending out repeatedly.
+I do monitor the signals with the HackRF. I checked the SDR solution and there I can clearly see the tag response to the query/queryrep. So I will need to do some more analyzing of the SDR solution to see if I am still missing something. (if you have any idea on why I do not getting a signal, feel free to drop me a message).
+![query signal](https://github.com/zaphoxx/zuhf-rfid/blob/main/query-signal.jpg)
 
