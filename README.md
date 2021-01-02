@@ -80,3 +80,5 @@ I do monitor the signals with the HackRF. I checked the SDR solution and there I
 ![query signal](https://github.com/zaphoxx/zuhf-rfid/blob/main/query-signal.jpg)
 ![full sequence](https://github.com/zaphoxx/zuhf-rfid/blob/main/query_queryrep-sequence.jpg)
 
+From what i see comparing the sdr approach with the cc1101 approach the main difference are the powerlevels reaching the tag. The usrp provides a much higher powerlevel then the cc1101 does. So i might need to amplify cc1101 output power to get a tag response.
+Not sure if this is it but its the one difference that sticks out.
