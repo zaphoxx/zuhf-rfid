@@ -27,6 +27,9 @@ Datasheets/Specifications/libs
 * Arduino Lib for CC1101: I started by using https://github.com/simonmonk/CC1101_arduino and modifying it as needed in the further process. There are other CC1101 libraries for Arduino available but this seemed to me the simplest to get started with and to explore the capabilities of the cc1101 chip.
 * cc1101 - Programming Output Powers https://www.ti.com/lit/an/swra151a/swra151a.pdf
 * cc1101 - setting registers for ASK/OOK modulation https://www.ti.com/lit/pdf/swra215
+* cc1101 - usage of gdox pins - https://www.ti.com/lit/an/swra121a/swra121a.pdf?ts=1609398291195&ref_url=https%253A%252F%252Fwww.ti.com%252Fproduct%252FCC1101%253FkeyMatch%253DASK%2BMODULATION%2BCC1101%2526tisearch%253DSearch-EN-everything%2526usecase%253DGPN
+* cc1101 - packet transmission basics - https://www.ti.com/lit/an/swra109c/swra109c.pdf?ts=1609543498401&ref_url=https%253A%252F%252Fwww.ti.com%252Fproduct%252FCC1101%253Futm_source%253Dgoogle%2526utm_medium%253Dcpc%2526utm_campaign%253Depd-null-null-GPN_EN-cpc-pf-google-wwe%2526utm_content%253DCC1101%2526ds_k%253D%257B_dssearchterm%257D%2526DCM%253Dyes%2526gclsrc%253Daw.ds%2526%2526gclid%253DCjwKCAiArbv_BRA8EiwAYGs23Cd4vk5J0NyYSean69jrkUv2pj_sYKPD1O72e1YVFU3YXXbui-JnrhoCMYsQAvD_BwE
+
 
 Helpful resources
 * https://www.eetimes.com/tutorial-radio-basics-for-uhf-rfid-part-i/
@@ -41,4 +44,23 @@ I am currently using the following hardware:
 * Instead of purchasing just the chip and having to solder things myself I decided to opt out for a already available module https://www.alibaba.com/product-detail/Taidacent-RF-Wireless-Transceiver-Module-Radio_1859941763.html for a few $ per piece.
 * Arduino Nano as MCU
 * HackRF One (mainly for monitoring and basic analysis of the signals produced by the CC1101 module)
+
+## Basic Settings
+
+To operate the CC1101 you have to set registers to the appropriate values. It can be very confusing on how the registers need to be setup and the cc1101 datasheet is quite impressive but the explanations in the documentation are mainly targeted towards a reader that already understands how these things work in general. However an approach that was quite helpful was to use the smartRF software to find some basic settings and then manually adjust some additional registers as needed.
+
+To get an idea of the settings needed for UHF RFID in general the specification for gs1-epc-gen2v2-uhf can be used as guideline (https://www.gs1.org/sites/default/files/docs/epc/gs1-epc-gen2v2-uhf-airinterface_i21_r_2018-09-04.pdf).
+```
+  CC1101 Freq = 868MHz
+  CC1101 DataRate = 80kBaud
+  CC1101 Modulation = ASK/OOK
+
+  1 Pulsewidth = 12.5µs
+  1 TARI = 25µs (DATA0)
+  const byte DATA0[] = {1,0};
+  const byte DATA1[] = {1,1,1,0};
+  const byte DELIM[] = {0};
+  const byte RTCAL[] = {1,1,1,1,1,0}; // length of (data0 + data1)
+  const byte TRCAL[] = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,0}; // max 3 * length(RTCAL) 16*12.5µs = 200µs --> BLF = 8/200µs = 40kHz
+```
 
