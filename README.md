@@ -53,7 +53,7 @@ To get an idea of the settings needed for UHF RFID in general the specification 
 
 ![ASK Envelope](https://github.com/zaphoxx/zuhf-rfid/blob/main/ASK-Modulation-RF-envelope.png)
 ![POWERDOWN/UP](https://github.com/zaphoxx/zuhf-rfid/blob/main/powerdownup-waveform-parameters.png)
-
+![PIE Symbols](https://github.com/zaphoxx/zuhf-rfid/blob/main/PIE-Symbols.png)
 ```
   CC1101 Freq = 868MHz
   CC1101 DataRate = 80kBaud
