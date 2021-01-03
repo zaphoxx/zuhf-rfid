@@ -82,3 +82,9 @@ I do monitor the signals with the HackRF. I checked the SDR solution and there I
 
 From what i see comparing the sdr approach with the cc1101 approach the main difference are the powerlevels reaching the tag. The usrp provides a much higher powerlevel then the cc1101 does. So i might need to amplify cc1101 output power to get a tag response.
 Not sure if this is it but its the one difference that sticks out.
+
+Woohoo! I finally got a tag response. The setup is quite improvised and the tag and antennas are basically in direct contact but now that I do have a signal I can work with that and see how to improve distance, power etc.
+
+![TagResponse](https://github.com/zaphoxx/zuhf-rfid/blob/main/tag-RN16-response.jpg)
+
+![Improvised Setup](https://github.com/zaphoxx/zuhf-rfid/blob/main/improvisedSetup.jpg)
