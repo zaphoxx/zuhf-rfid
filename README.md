@@ -21,6 +21,10 @@ Another issue I encountered was that even though it seems like some people have 
 ## Resources
 This a list of resources I have been using for this project. It is not a final list and new links or documents might be added in time. The list is not strictly in order of importance but I divided it into two sections where the top list are necessary resources like datasheets and specifications, whereas the second list is a list of helpful resources I found during my research.
 
+SDR projects on UHF-RFID on github
+* https://github.com/nkargas/Gen2-UHF-RFID-Reader - I have been using this as main source for general uhr-rfid related settings, code snippets etc. (in combination with the specification documents on gen2v2 uhf listed below). 
+* https://github.com/AdamLaurie/Gen2-UHF-RFID-Reader - this is a fork of the previous link but focusing more on the implementation on a bladerf rather then the usrp.
+
 Datasheets/Specifications/libs
 * CC1101 Datasheet https://www.ti.com/lit/ds/symlink/cc1101.pdf
 * https://www.gs1.org/sites/default/files/docs/epc/gs1-epc-gen2v2-uhf-airinterface_i21_r_2018-09-04.pdf
