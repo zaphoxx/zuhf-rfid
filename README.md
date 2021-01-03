@@ -1,12 +1,12 @@
 # zuhf-rfid
-Blog about my journey investigation uhf-rfid with arduino and cc1101. This project has already been going on with more are less time spent for a few weeks and I decided now to put the information I learned along the way down as a resource mainly for myself but make it available for others who might be interested.
+Blog about my journey investigation uhf-rfid with arduino and cc1101. This project has already been going on with more are less time spent for a few weeks and I decided now to put the information I learned along the way down as a resource mainly for myself but also to make it available for others who might be interested.
 
 ## Background
-The whole project came out of another project related to UHF-RFID but using SDR. The goal of the other project was to get an RFID reader up and running using SDR. Work has already done on this field by nkargas and the project can be found here https://github.com/nkargas/Gen2-UHF-RFID-Reader. Based on nkargas project I could get a very basic RFID reader up and running. However the reader as developed by nkargas only reads out the tags EPC and basically stops there. Adam Laurie has started to take this a step further using a bladeRF and has published his fork of the original reader here https://github.com/AdamLaurie/Gen2-UHF-RFID-Reader.
+The whole project came out of another project related to UHF-RFID but using SDR. The goal of the other project was to get an RFID reader up and running using SDR. Work has already been done on this field by nkargas and the project can be found here https://github.com/nkargas/Gen2-UHF-RFID-Reader. Based on nkargas project I could get a very basic RFID reader up and running. However the reader as developed by nkargas only reads out the tags EPC and basically stops there. Adam Laurie has started to take this a step further using a bladeRF and has published his fork of the original reader here https://github.com/AdamLaurie/Gen2-UHF-RFID-Reader.
 With SDR the critical part is usually the time between receiving the RN16 value from the tag and responding with an ACK (with the received RN16) to receive the actual EPC. Due to latencys this can be difficult to satisfy and makes the SDR solution sometimes unreliable.This problem has been outlined by the original authors and by others trying to implement the uhf rfid reader with SDR.
 
 ## Another Approach
-A friend noted that there is a TI Chip CC1101 which can be used (from the datasheet)
+A friend noted that there is a TI Chip CC1101 which can be used (as stated in the datasheet) for
 * Ultra low-power wireless applications operating in the 315/433/**868**/**915** MHz ISM/SRD bands
 * Wireless alarm and security systems
 * Industrial monitoring and control
@@ -17,6 +17,8 @@ Also there exists an Arduino library for the CC1101. Therefore using an Arduino 
 ## Roadblock(s)
 There are a few roadblocks on getting to a working solution. The first and most important one would be that even though a could reproduce the above mentioned SDR solution I actually have only negligible experience with RF not even talking about how the CC1101 works and how it can "programmed" to do my bidding. Which means there will be (and already was as I am already in the middle of it) tons of research and learning necessary on the way. That is the main reason I started this block hoping someone will stumple accross it and perhaps see the mistakes I made (and believe me I did a lot already) and perhaps she has some additional insight and can give me some helpful advice.
 Another issue I encountered was that even though it seems like some people have already tried the same before there is very little information around about how specifically they did realize it. There are some nice publications available but these dont go into to much detail regarding the technical realization. TI has a forum where you can find some information in particular regarding operation of the cc1101 but often the advice found will be to use the SmartRF software (it is free to download and use but you have to login and sign with blood that you wont use it for any mischief) to e.g. find valid register settings.
+
+With using the Arduino there is the caveat that the memory available is quite limited and you have to be careful on how you are using your resources when programming the Firmware. At the moment it looks like I should get along with the memory space available. But in case I run into memory issues there is the option to use e.g a Raspberry Pi or similar as alternative. For the Raspberry Pi there are also cc1101 libraries available and transferring the code from Arduino to the Pi shouldnt be an issue.
 
 ## Resources
 This a list of resources I have been using for this project. It is not a final list and new links or documents might be added in time. The list is not strictly in order of importance but I divided it into two sections where the top list are necessary resources like datasheets and specifications, whereas the second list is a list of helpful resources I found during my research.
@@ -65,7 +67,7 @@ To get an idea of the settings needed for UHF RFID in general the specification 
   CC1101 Freq = 868MHz
   CC1101 DataRate = 80kBaud
   CC1101 Modulation = ASK/OOK
-  byte paTable[8] = {0x27,0xc0,0x00,0x00,0x00,0x00,0x00,0x00};
+  byte paTable[8] = {0x27,0xc0,0x00,0x00,0x00,0x00,0x00,0x00}; // putting the low end to 0x27 is not necessary and you can also use 0x00 instead
 
   1 Pulsewidth = 12.5µs
   1 TARI = 25µs (DATA0)
@@ -87,6 +89,7 @@ I do monitor the signals with the HackRF. I checked the SDR solution and there I
 From what i see comparing the sdr approach with the cc1101 approach the main difference are the powerlevels reaching the tag. The usrp provides a much higher powerlevel then the cc1101 does. So i might need to amplify cc1101 output power to get a tag response.
 Not sure if this is it but its the one difference that sticks out.
 
+## First Success - Seeing a Tag Response ##
 Woohoo! I finally got a tag response. The setup is quite improvised and the tag and antennas are basically in direct contact but now that I do have a signal I can work with that and see how to improve distance, power etc.
 
 ![TagResponse](https://github.com/zaphoxx/zuhf-rfid/blob/main/tag-RN16-response.jpg)
@@ -96,3 +99,5 @@ Woohoo! I finally got a tag response. The setup is quite improvised and the tag 
 So lets check a response and see if the structure (FM0 encoded reply) makes sense with what we would expect. From the image below you can see that the signal we identified as tag response aligns with the expectations. The tag response consists of a FM0 preamble, a RN16 and a dummy data1 bit.
 
 ![TagResponse Example](https://github.com/zaphoxx/zuhf-rfid/blob/main/tagRN16-example.png)
+
+
