@@ -88,3 +88,7 @@ Woohoo! I finally got a tag response. The setup is quite improvised and the tag 
 ![TagResponse](https://github.com/zaphoxx/zuhf-rfid/blob/main/tag-RN16-response.jpg)
 
 ![Improvised Setup](https://github.com/zaphoxx/zuhf-rfid/blob/main/improvisedSetup.jpg)
+
+So lets check a response and see if the structure (FM0 encoded reply) makes sense with what we would expect. From the image below you can see that the signal we identified as tag response aligns with the expectations. The tag response consists of a FM0 preamble, a RN16 and a dummy data1 bit.
+
+![TagResponse Example](https://github.com/zaphoxx/zuhf-rfid/blob/main/tagRN16-example.png)
