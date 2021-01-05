@@ -57,11 +57,11 @@ To operate the CC1101 you have to set registers to the appropriate values. It ca
 
 To get an idea of the settings needed for UHF RFID in general the specification for gs1-epc-gen2v2-uhf can be used as guideline (https://www.gs1.org/sites/default/files/docs/epc/gs1-epc-gen2v2-uhf-airinterface_i21_r_2018-09-04.pdf).
 
-![ASK Envelope](https://github.com/zaphoxx/zuhf-rfid/images/blob/main/ASK-Modulation-RF-envelope.png)
+![ASK Envelope](https://github.com/zaphoxx/zuhf-rfid/blob/main/images/ASK-Modulation-RF-envelope.png)
 
-![POWERDOWN/UP](https://github.com/zaphoxx/zuhf-rfid/blob/main/powerdownup-waveform-parameters.png)
+![POWERDOWN/UP](https://github.com/zaphoxx/zuhf-rfid/blob/main/images/powerdownup-waveform-parameters.png)
 
-![PIE Symbols](https://github.com/zaphoxx/zuhf-rfid/blob/main/PIE-Symbols.png)
+![PIE Symbols](https://github.com/zaphoxx/zuhf-rfid/blob/main/images/PIE-Symbols.png)
 
 ```
   CC1101 Freq = 868MHz
@@ -78,13 +78,13 @@ To get an idea of the settings needed for UHF RFID in general the specification 
   const byte TRCAL[] = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,0}; // max 3 * length(RTCAL) 16*12.5µs = 200µs --> BLF = 8/200µs = 40kHz
 ```
 To make live easier I ordered a very simply pcb to have the arduino and the cc1101 module properly connected and soldered on the same board.
-![pcb board setup](https://github.com/zaphoxx/zuhf-rfid/blob/main/rfid-setup.jpg)
+![pcb board setup](https://github.com/zaphoxx/zuhf-rfid/blob/main/images/rfid-setup.jpg)
 
 After some trial and error and getting the coding to work properly I finally got a query signal going out. Unfortunately I do not get a RN16 response from tag. This is the point where I seem to hit a brick wall. From what I can say the settings look good. I also tried to send out a query followed by several queryrep commands but nothing seems to get the tag to give me any response. (see query signal below). 
 The current full signal is (1500µs settle-time for the tag + query command + 250µs cw + x times queryrep with cw + powerdown) and this sending out repeatedly.
 I do monitor the signals with the HackRF. I checked the SDR solution and there I can clearly see the tag response to the query/queryrep. So I will need to do some more analyzing of the SDR solution to see if I am still missing something. (if you have any idea on why I do not getting a signal, feel free to drop me a message).
-![query signal](https://github.com/zaphoxx/zuhf-rfid/blob/main/query-signal.jpg)
-![full sequence](https://github.com/zaphoxx/zuhf-rfid/blob/main/query_queryrep-sequence.jpg)
+![query signal](https://github.com/zaphoxx/zuhf-rfid/blob/main/images/query-signal.jpg)
+![full sequence](https://github.com/zaphoxx/zuhf-rfid/blob/main/images/query_queryrep-sequence.jpg)
 
 From what i see comparing the sdr approach with the cc1101 approach the main difference are the powerlevels reaching the tag. The usrp provides a much higher powerlevel then the cc1101 does. So i might need to amplify cc1101 output power to get a tag response.
 Not sure if this is it but its the one difference that sticks out.
@@ -92,12 +92,12 @@ Not sure if this is it but its the one difference that sticks out.
 ## First Success - Seeing a Tag Response ##
 Woohoo! I finally got a tag response. The setup is quite improvised and the tag and antennas are basically in direct contact but now that I do have a signal I can work with that and see how to improve distance, power etc.
 
-![TagResponse](https://github.com/zaphoxx/zuhf-rfid/blob/main/tag-RN16-response.jpg)
+![TagResponse](https://github.com/zaphoxx/zuhf-rfid/blob/main/images/tag-RN16-response.jpg)
 
-![Improvised Setup](https://github.com/zaphoxx/zuhf-rfid/blob/main/improvisedSetup.jpg)
+![Improvised Setup](https://github.com/zaphoxx/zuhf-rfid/blob/main/images/improvisedSetup.jpg)
 
 So lets check a response and see if the structure (FM0 encoded reply) makes sense with what we would expect. From the image below you can see that the signal we identified as tag response aligns with the expectations. The tag response consists of a FM0 preamble, a RN16 and a dummy data1 bit.
 
-![TagResponse Example](https://github.com/zaphoxx/zuhf-rfid/blob/main/tagRN16-example.png)
+![TagResponse Example](https://github.com/zaphoxx/zuhf-rfid/blob/main/images/tagRN16-example.png)
 
 
