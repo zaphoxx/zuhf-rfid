@@ -100,4 +100,5 @@ So lets check a response and see if the structure (FM0 encoded reply) makes sens
 
 ![TagResponse Example](https://github.com/zaphoxx/zuhf-rfid/blob/main/images/tagRN16-example.png)
 
-
+## New Considerations ##
+So as I already mentioned above the space availabe especially for dynamic memory is quite tight on the Arduino. Therefore I am currently considering if I should move over to an old RaspberryPi now before moving on with the actual UHF-RFID protocol. There is a raspberry library available by spaceteddy (https://github.com/SpaceTeddy/CC1101) which I will take a look into to see how much additional work this might take. The thing is that I will have to port to raspberry later anyway so it would make sense to do it right away as I am not an experienced programmer and trying to squeeze everything into the Arduino might cause me more headaches then necessary and it would distract me from the actual fun part of this project anyways.
