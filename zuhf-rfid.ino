@@ -1,18 +1,18 @@
-#include <RFID_CC1101.h> //Download original library here: http://electronoobs.com/eng_arduino_RFID_cc1101.php
-#include <zuhf_vars.h>
-#include <zuhf_buffer.h>
+#include <ZUHF_CC1101.h> //Download original library here: http://electronoobs.com/eng_arduino_RFID_cc1101.php
+#include <ZUHF_VARS.h>
+#include <ZUHF_BUFFER.h>
 
 #define DEBUG 0
 #define MAXQUERY 88
 #define QUERYSIZE 22 
 #define MAXROUNDS 16
-#define CW_SIZE 4
+#define CW_SIZE 3
 #define IDLE_SIZE 10
 // additional global vars
 
 byte paTable[8] = {0x00,0xc0,0x00,0x00,0x00,0x00,0x00,0x00}; 
 byte ack[] = {0,1,0,1,1,1,1,1,0,1,0,1,1,1,0,1,1,1,0,1,0,1,1,1,0,1,1,1,0,1,1,1,0,1,0,1,0,1,1,1,0,1,0,1,1,1,0,1,1,1,0,1,1,1,0,1,1,1,0,1,0,1,0,1,0,1,0};
-
+byte powerValues[] = {0xC0,0xC1,0xC2,0xC3,0xC4,0xC5,0xC6,0xC7,0xC8,0xC9,0xCA,0xCB,0xCC,0xCD,0x80,0x81,0x82,0xCE,0x83,0x84,0x85,0x86,0x87,0x88,0x89,0x8A,0xCF,0x8B,0x8C,0x8D,0x8E,0x50,0x60,0x51,0x61,0x40,0x52,0x62,0x3F,0x3E,0x53,0x3D,0x63,0x3C,0x54,0x64,0x3B,0x55,0x2F,0x65,0x3A,0x2E,0x56,0x66,0x39,0x2D,0x57,0x67,0x8F,0x2C,0x38,0x68,0x2B,0x37,0x69,0x2A,0x6A,0x36,0x29,0x6B,0x28,0x35,0x27,0x26,0x34,0x25,0x6C,0x33,0x24,0x1F,0x1E,0x1D,0x1C,0x23,0x32,0x1B,0x1A,0x19,0x18,0x22,0xF,0xE,0x17,0xD,0xC,0x16,0x31,0xB,0xA,0x15,0x9,0x6D,0x8,0x14,0x21,0x7,0x13,0x6,0x5,0x12,0x4,0x3,0x2,0x11,0x1,0x10,0x20,0x30,0x0,0x6E,0x6F};
 DATA_BUFFER databuffer;
 byte QUERY[QUERYSIZE];
 byte ENCODED_QUERY[MAXQUERY];
@@ -25,51 +25,45 @@ int  irounds = 0;
 byte CW[CW_SIZE]; // 250µs
 byte OFF[IDLE_SIZE];
 byte CRC[5] = {0,0,0,0,0};
+byte p = 0;
 
 
 void setup()
 {
-  Serial.begin(9600);
-  /* basic initialization of CC1101 */
-  RFID_cc1101.Init();
-  InitRegisters();
-  /* custom initial register settings for CC1101 
-   * Register Setup for
-   *  910e6 Hz
-   *  datarate 80kBaud
-   *  ASK/OOK modulation
-   *  no crc
-   *  no preamble
-   *  no sync
-   *  infinite packet length selected
-   *  manual calibration (once in setup) needs only be updated if power adjustments are done.
-   */
+    Serial.begin(9600);
+    /* basic initialization of CC1101 */
+    ZUHF_cc1101.Init(SS_TX);
 
-   for (int i = 0; i < CW_SIZE; i++)
-   {
+    for (int i = 0; i < CW_SIZE; i++)
+    {
     CW[i] = 0xff;
-   }
-   for (int i = 0; i < IDLE_SIZE; i++)
-   {
+    }
+    for (int i = 0; i < IDLE_SIZE; i++)
+    {
     OFF[i] = 0x00;
-   }
+    }
 }
 
 
 void loop()
 {
   //reader_state = R_TEST;
-      // calibrate cc1101
-    RFID_cc1101.SpiStrobe(CC1101_SCAL);
-    // turn on tx 
-    RFID_cc1101.SpiStrobe(CC1101_STX);
-    // send cw for tag activation
-    update_fifo(TAGSETTLE, sizeof(TAGSETTLE));
+  // calibrate cc1101
+    
   while (reader_state != R_WAIT)
   {
     switch(reader_state)
     {
       case R_START:
+        //p = (p % sizeof(powerValues)) + 1 ;
+        //paTable[1] = powerValues[p];
+        //ZUHF_cc1101.SpiWriteBurstReg(CC1101_PATABLE, paTable, 8);
+        ZUHF_cc1101.SpiStrobe(SS_TX, CC1101_SCAL);
+        // turn on tx 
+        ZUHF_cc1101.SpiStrobe(SS_TX, CC1101_STX);
+        // send cw for tag activation
+        ZUHF_cc1101.UpdateFifo(TAGSETTLE, sizeof(TAGSETTLE));
+        
         irounds = 0;
         ACK_FLAG = 0;
         databuffer.data_size = 0;
@@ -112,13 +106,13 @@ void loop()
         }
         Serial.println();
 */        
-        update_fifo(FIFOBUFFER, buffer_size);
+        ZUHF_cc1101.UpdateFifo(FIFOBUFFER, buffer_size);
         // 8) switch to next state 
         reader_state = R_CW;
         break;
 
       case R_CW:
-        //update_fifo(CW,CW_SIZE);
+        //ZUHF_cc1101.UpdateFifo(CW,CW_SIZE);
         //Serial.println("[CW]");
         if (ACK_FLAG)
         {
@@ -132,7 +126,7 @@ void loop()
             reader_state = R_QUERYREP;
           }else{
             //Serial.println("[-> START]");
-            reader_state = R_START;
+            reader_state = R_POWERDOWN;
           }
         }
         break;
@@ -152,7 +146,7 @@ void loop()
           }
         }
         buffer_size = generate_bytes(FIFOBUFFER, databuffer.data, databuffer.data_size);
-        update_fifo(FIFOBUFFER, buffer_size);
+        ZUHF_cc1101.UpdateFifo(FIFOBUFFER, buffer_size);
         irounds++;
         reader_state = R_CW;
         break;
@@ -160,18 +154,18 @@ void loop()
       case R_ACK:
         // send a dummy ack
         buffer_size = generate_bytes(FIFOBUFFER, ack, sizeof(ack));
-        update_fifo(FIFOBUFFER, buffer_size);
+        ZUHF_cc1101.UpdateFifo(FIFOBUFFER, buffer_size);
         reader_state = R_CW;
         ACK_FLAG = 0;
         break;
         
       case R_POWERDOWN:
-        //while(digitalRead(!GDO0));
-        //update_fifo(FIFOBUFFER, buffer_size);
-        //while(digitalRead(!GDO0));
-        while(digitalRead(GDO0));
-        RFID_cc1101.SpiStrobe(CC1101_SFTX);
-        delay(5);
+        //while(digitalRead(!GDO0_TX));
+        //ZUHF_cc1101.UpdateFifo(FIFOBUFFER, buffer_size);
+        //while(digitalRead(!GDO0_TX));
+        //while(digitalRead(GDO0_TX));
+        //ZUHF_cc1101.SpiStrobe(CC1101_SFTX);
+        //delay(5);
         reader_state = R_START;
         break;
       
@@ -212,66 +206,6 @@ byte build_query(byte s)
   memcpy(QUERY+pos, &CRC, 5);
   pos += 5;
   return pos; // 
-}
-
-
-void InitRegisters()
-{
-  RFID_cc1101.SpiWriteBurstReg(CC1101_PATABLE, paTable, 8);
-  //RFID_cc1101.SpiWriteReg(CC1101_IOCFG2,0x29); // 
-  //RFID_cc1101.SpiWriteReg(CC1101_IOCFG1,0x06);  // not connected
-  RFID_cc1101.SpiWriteReg(CC1101_IOCFG2,0x03);  /* Associated to the TX FIFO: Asserts when TX FIFO is full. De-asserts when the 
-                                                   TX FIFO is drained below the TX FIFO
-                                                   threshold. */
-  RFID_cc1101.SpiWriteReg(CC1101_IOCFG0,0x06);  /*Asserts when sync word has been sent / received, and de-asserts at the end of the packet. 
-                                                  In RX, the pin will also deassert when a packet is discarded due to address or maximum length 
-                                                  filtering or when the radio enters RXFIFO_OVERFLOW state. In TX the pin will de-assert if the 
-                                                  TX FIFO underflows. */ 
-  RFID_cc1101.SpiWriteReg(CC1101_PKTLEN,0x00);  //Packet Length
-  RFID_cc1101.SpiWriteReg(CC1101_PKTCTRL0,0x02);//Packet Automation Control // infinit packetlength
-  RFID_cc1101.SpiWriteReg(CC1101_PKTCTRL1,0x00);
-  RFID_cc1101.SpiWriteReg(CC1101_FSCTRL1,0x06); //Frequency Synthesizer Control
-  RFID_cc1101.SpiWriteReg(CC1101_FREQ2,0x21);   //Frequency Control Word, High Byte
-  RFID_cc1101.SpiWriteReg(CC1101_FREQ1,0x62);   //Frequency Control Word, Middle Byte
-  RFID_cc1101.SpiWriteReg(CC1101_FREQ0,0x76);   //Frequency Control Word, Low Byte
-  RFID_cc1101.SpiWriteReg(CC1101_MDMCFG4,0x5b); //Modem Configuration  // DR 80kBaud
-  RFID_cc1101.SpiWriteReg(CC1101_MDMCFG3,0xa7); //Modem Configuration // DR 80kBaud
-  RFID_cc1101.SpiWriteReg(CC1101_MDMCFG2,0x30); //Modem Configuration // ASK / OOK nopreamble nosync , no crc appended
-  RFID_cc1101.SpiWriteReg(CC1101_MDMCFG1,0x00); //channel spacing 
-  RFID_cc1101.SpiWriteReg(CC1101_MDMCFG0,0xff); // channel spacing 
-  //RFID_cc1101.SpiWriteReg(CC1101_MCSM1,0x32);   //Main Radio Control State Machine Configuration
-  //RFID_cc1101.SpiWriteReg(CC1101_MCSM1,0x0F);   //configured to always stay in TX state
-  RFID_cc1101.SpiWriteReg(CC1101_MCSM1,0x30);   // default settings 
-  RFID_cc1101.SpiWriteReg(CC1101_MCSM0,0x29);   //Main Radio Control State Machine Configuration
-  RFID_cc1101.SpiWriteReg(CC1101_FOCCFG,0x1D);  //Frequency Offset Compensation Configuration
-  RFID_cc1101.SpiWriteReg(CC1101_BSCFG,0x1C);   //Bit Synchronization Configuration
-  RFID_cc1101.SpiWriteReg(CC1101_AGCCTRL2,0x07);//AGC Control // mainly used for RX mode
-  RFID_cc1101.SpiWriteReg(CC1101_AGCCTRL1,0x00);//AGC Control // mainly used for RX mode
-  RFID_cc1101.SpiWriteReg(CC1101_AGCCTRL0,0x92);//AGC Control // mainly used for RX mode
-  RFID_cc1101.SpiWriteReg(CC1101_FREND1,0x56);  //Front End RX Configuration
-  RFID_cc1101.SpiWriteReg(CC1101_FREND0,0x11);  // the last two bits define the index from the patable to use
-  RFID_cc1101.SpiWriteReg(CC1101_FSCAL3,0xEA);  //Frequency Synthesizer Calibration
-  RFID_cc1101.SpiWriteReg(CC1101_FSCAL2,0x2A);  //Frequency Synthesizer Calibration
-  RFID_cc1101.SpiWriteReg(CC1101_FSCAL1,0x00);  //Frequency Synthesizer Calibration
-  RFID_cc1101.SpiWriteReg(CC1101_FSCAL0,0x1F);  //Frequency Synthesizer Calibration
-  RFID_cc1101.SpiWriteReg(CC1101_TEST2,0x81);   //Various Test Settings
-  RFID_cc1101.SpiWriteReg(CC1101_TEST0,0x35);   //Various Test Settings
-  RFID_cc1101.SpiWriteReg(CC1101_TEST0,0x09);   //Various Test Settings
-  RFID_cc1101.SpiWriteReg(CC1101_FIFOTHR,0x07); // tx threshold 33bytes
-   // manual calibration trigger
-  RFID_cc1101.SpiStrobe(CC1101_SCAL);
-}
-
-
-void update_fifo(byte *data, int nbytes)
-{
-  int index = 0;
-  while (index < nbytes)
-  {
-    while(digitalRead(GDO2)); // if/while fifo full pause (de-asserts when below threshold
-    RFID_cc1101.SpiWriteBurstReg(CC1101_TXFIFO,&data[index],1);
-    index++;
-  }
 }
 
 
