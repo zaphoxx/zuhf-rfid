@@ -35,6 +35,7 @@ Datasheets/Specifications/libs
 * cc1101 - setting registers for ASK/OOK modulation https://www.ti.com/lit/pdf/swra215
 * cc1101 - usage of gdox pins - https://www.ti.com/lit/an/swra121a/swra121a.pdf?ts=1609398291195&ref_url=https%253A%252F%252Fwww.ti.com%252Fproduct%252FCC1101%253FkeyMatch%253DASK%2BMODULATION%2BCC1101%2526tisearch%253DSearch-EN-everything%2526usecase%253DGPN
 * cc1101 - packet transmission basics - https://www.ti.com/lit/an/swra109c/swra109c.pdf?ts=1609543498401&ref_url=https%253A%252F%252Fwww.ti.com%252Fproduct%252FCC1101%253Futm_source%253Dgoogle%2526utm_medium%253Dcpc%2526utm_campaign%253Depd-null-null-GPN_EN-cpc-pf-google-wwe%2526utm_content%253DCC1101%2526ds_k%253D%257B_dssearchterm%257D%2526DCM%253Dyes%2526gclsrc%253Daw.ds%2526%2526gclid%253DCjwKCAiArbv_BRA8EiwAYGs23Cd4vk5J0NyYSean69jrkUv2pj_sYKPD1O72e1YVFU3YXXbui-JnrhoCMYsQAvD_BwE
+* Arduino library for CC1101
 
 
 Helpful resources
