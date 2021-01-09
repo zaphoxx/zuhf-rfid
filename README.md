@@ -120,6 +120,6 @@ Still working with the current modules (the ones for the 430MHz) and messy setup
 Both units can communicate via the serial connection and are additionally connected to use a digital trigger (to trigger the RX on/off);
 The serial connection will be necessary to communicate the captured RN16 to the TX module so the reader can send a valid ACK signal to the tag.
 
-The current status is that I can read out (not very reliable yet due to the used modules but it works) the RN16. From the screenshots below you can see that the receiver can read the full tag response as expected. You can see the FM0 preamble and the actual RN16 differently colored in the image. The FM0 preamble is expected be (0010100011) followed by the RN16 + 1 dummy bit (which in this case is just 11 at the end and is not highlighted in the image).
+The current status is that I can read out (not very reliable yet due to the used modules but it works) the RN16. From the screenshots below you can see that the receiver can read the full tag response as expected. You can see the FM0 preamble and the actual RN16 differently colored in the image. The FM0 preamble is expected be (001011011100) followed by the RN16 + 1 dummy bit (which in this case is just 11 at the end and is not highlighted in the image).
 
 ![RN16 Signal from RX module](https://github.com/zaphoxx/zuhf-rfid/blob/main/images/rn16_signal.png)
