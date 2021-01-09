@@ -90,6 +90,9 @@ I do monitor the signals with the HackRF. I checked the SDR solution and there I
 From what i see comparing the sdr approach with the cc1101 approach the main difference are the powerlevels reaching the tag. The usrp provides a much higher powerlevel then the cc1101 does. So i might need to amplify cc1101 output power to get a tag response.
 Not sure if this is it but its the one difference that sticks out.
 
+## Dont trust the products headline ##
+Painful lesson learned. The modules I ordered are not designed for 868 MHz but for 430 MHz instead. So if you are also going into that direction make sure the modules you order are specifically for 868 MHz. Don't trust the main description, checkout the detailed description. In my case the description stated 868 MHz but in the detailed description it did say 430MHz instead. It can be really frustrating (and time and coffee consuming) when the module you have does not work the way you think it should. Until I get the new actual modules I will use the ones I have as workaround. As you can see in the next section, you can get a signal but you have to basically glue the modules right to the tag at the right location on the tag and even then you might still not get a signal. (a little tinfoil at the right location might help to get more of the signal reflected on the the tag).
+
 ## First Success - Seeing a Tag Response ##
 Woohoo! I finally got a tag response. The setup is quite improvised and the tag and antennas are basically in direct contact but now that I do have a signal I can work with that and see how to improve distance, power etc.
 
@@ -103,3 +106,20 @@ So lets check a response and see if the structure (FM0 encoded reply) makes sens
 
 ## New Considerations ##
 So as I already mentioned above the space availabe especially for dynamic memory is quite tight on the Arduino. Therefore I am currently considering if I should move over to an old RaspberryPi now before moving on with the actual UHF-RFID protocol. There is a raspberry library available by spaceteddy (https://github.com/SpaceTeddy/CC1101) which I will take a look into to see how much additional work this might take. The thing is that I will have to port to raspberry later anyway so it would make sense to do it right away as I am not an experienced programmer and trying to squeeze everything into the Arduino might cause me more headaches then necessary and it would distract me from the actual fun part of this project anyways.
+
+## The RaspberryPi debacle ##
+Back to square one. After some reading and experimantation with an old raspberry pi I had at hand I realized that this is not a good option at all. The raspberry is not suited for this kind of realtime application. What happens is that due to the interrupts on the raspi the module drops the TX and suddenly stops sending anymore which is really bad when you try to interact with an passive tag that keeps itself alive relying on the same. After 3 days of trying to still convince the raspiberry NOT to drop the signal I decided to go back to the arduino which did work fine so far.
+
+## Getting the RN16 ##
+Still working with the current modules (the ones for the 430MHz) and messy setup (everything taped together in close proximity). What I do have now is the following:
+
+* TX unit: Arduino + cc1101 module
+* RX unit: Arduino + cc1101 module
+
+(The other option would be to connect the RX module as second slave to the arduino which does work fine but the wiring is getting very messy then.)
+Both units can communicate via the serial connection and are additionally connected to use a digital trigger (to trigger the RX on/off);
+The serial connection will be necessary to communicate the captured RN16 to the TX module so the reader can send a valid ACK signal to the tag.
+
+The current status is that I can read out (not very reliable yet due to the used modules but it works) the RN16. From the screenshots below you can see that the receiver can read the full tag response as expected. You can see the FM0 preamble and the actual RN16 differently colored in the image. The FM0 preamble is expected be (0010100011) followed by the RN16 + 1 dummy bit (which in this case is just 11 at the end and is not highlighted in the image).
+
+![RN16 Signal from RX module](https://github.com/zaphoxx/zuhf-rfid/blob/main/images/rn16_signal.png)
