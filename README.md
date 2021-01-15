@@ -123,3 +123,11 @@ The serial connection will be necessary to communicate the captured RN16 to the 
 The current status is that I can read out (not very reliable yet due to the used modules but it works) the RN16. From the screenshots below you can see that the receiver can read the full tag response as expected. You can see the FM0 preamble and the actual RN16 differently colored in the image. The FM0 preamble is expected be (001011011100) followed by the RN16 + 1 dummy bit (which in this case is just 11 at the end; the arduino serial.print() omits leading zeros, so these need to be added in case the byte shows less then 8 bits).
 
 ![RN16 Signal from RX module](https://github.com/zaphoxx/zuhf-rfid/blob/main/images/rn16_signal.png)
+
+## Time for upgrades ##
+The modules I used before were specifically designed for around 430MHz. I ordered new ones that are clearly designed for 868MHz instead. Also I decided to upgraded the Arduino to an Arduino Due, to be on the safe side and to have the option to add some controls, display etc. in the long run. The receiver part can still use the Arduino Nano and communicate with the TX unit via serial communication to exchange e.g. the captured RN16 and other information.
+
+The new modules arrived and if they work (some don't which is again very frustrating as lot of time goes into finding the root cause) but if they work the signal is as expected much better. The tag/card still needs to be VERY close (1-2 mm) to the TX antenna to get the tags RN16 response. I guess I will have to live with that for now until I to my own design and allow for different antennas to be attached.
+
+## One step foward two steps back ##
+Unfortunately I accidently killed my Arduino Board. A wire got loose, touched the board somewhere and ** poof ** lights out. Will need to order a new one which will take a couple of days before I will be able to continue working on the project. Seems like I am stuck at this stage for a while now. Hopefully by the weekend I will have all I need to get things foward next week.
