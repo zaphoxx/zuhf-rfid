@@ -48,9 +48,11 @@ Helpful resources
 
 ## Hardware
 I am currently using the following hardware:
-* Instead of purchasing just the chip and having to solder things myself I decided to opt out for a already available module https://www.alibaba.com/product-detail/Taidacent-RF-Wireless-Transceiver-Module-Radio_1859941763.html for a few $ per piece.
-* Arduino Nano as MCU
+* Instead of purchasing just the chip and having to solder things myself I decided to opt out for a already available module ~~https://www.alibaba.com/product-detail/Taidacent-RF-Wireless-Transceiver-Module-Radio_1859941763.html~~ for example from here (https://www.amazon.de/gp/product/B084BSMCQG/ref=ppx_yo_dt_b_asin_title_o00_s00?ie=UTF8&psc=1) for a few $ per piece.
+* ~~Arduino Nano as MCU~~ Arduino Due
 * HackRF One (mainly for monitoring and basic analysis of the signals produced by the CC1101 module)
+* (optional) a custom pcb board to avoid pins getting loose and to enhance connection of the spi wirings. (but all can also be done by using wires and a breadboard.)
+![Cthuloid UHF-RFID](https://github.com/zaphoxx/zuhf-rfid/blob/main/images/cthulhu_mod.png)
 
 ## Basic Settings
 
@@ -131,3 +133,8 @@ The new modules arrived and if they work (some don't which is again very frustra
 
 ## One step foward two steps back ##
 Unfortunately I accidently killed my Arduino Board. A wire got loose, touched the board somewhere and ** poof ** lights out. Will need to order a new one which will take a couple of days before I will be able to continue working on the project. Seems like I am stuck at this stage for a while now. Hopefully by the weekend I will have all I need to get things foward next week.
+
+## Getting tags EPC ##
+TODO:
+![Reader-Tag-Communication](https://github.com/zaphoxx/zuhf-rfid/blob/main/images/successfull_tag_epc_signal.jpg)
+![Tag Data From Response](https://github.com/zaphoxx/zuhf-rfid/blob/main/images/tag_data_epc.jpg)
