@@ -52,7 +52,7 @@ I am currently using the following hardware:
 * ~~Arduino Nano as MCU~~ Arduino Due
 * HackRF One (mainly for monitoring and basic analysis of the signals produced by the CC1101 module)
 * (optional) a custom pcb board to avoid pins getting loose and to enhance connection of the spi wirings. (but all can also be done by using wires and a breadboard.)
-![Cthuloid UHF-RFID](https://github.com/zaphoxx/zuhf-rfid/blob/main/images/cthulhu_mod.png)
+![Cthuloid UHF-RFID](https://github.com/zaphoxx/zuhf-rfid/blob/main/images/cthuloid_pcb.jpg)
 
 ## Basic Settings
 
