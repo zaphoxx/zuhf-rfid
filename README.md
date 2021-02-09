@@ -129,7 +129,7 @@ The current status is that I can read out (not very reliable yet due to the used
 ![RN16 Signal from RX module](https://github.com/zaphoxx/zuhf-rfid/blob/main/images/rn16_signal.png)
 
 ## Time for upgrades ##
-The modules I used before were specifically designed for around 430MHz. I ordered new ones that are clearly designed for 868MHz instead. Also I decided to upgraded the Arduino to an Arduino Due, to be on the safe side and to have the option to add some controls, display etc. in the long run. The receiver part can still use the Arduino Nano and communicate with the TX unit via serial communication to exchange e.g. the captured RN16 and other information.
+The modules I used before were specifically designed for around 430MHz. I ordered new ones that are clearly designed for 868MHz instead. Also I decided to upgraded the Arduino to an Arduino Due, to be on the safe side and to have the option to add some controls, display etc. in the long run. ~~The receiver part can still use the Arduino Nano and communicate with the TX unit via serial communication to exchange e.g. the captured RN16 and other information.~~ Unfortunately the Serial Communication does not necessarily within the same loop. So instead of using a second arduino unit I connect both cc1101 modules to the arduino due. This requires reprogramming of the USART0 (or USART1) to function as SPI interface. (More information on how to do that can be found here https://forum.arduino.cc/index.php?topic=283766.0 and in the Atmel SAM3X8x datasheet https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=&cad=rja&uact=8&ved=2ahUKEwjqw-nd8N3uAhUUnBQKHSFfDK0QFjAAegQIAhAC&url=https%3A%2F%2Fww1.microchip.com%2Fdownloads%2Fen%2FDeviceDoc%2FAtmel-11057-32-bit-Cortex-M3-Microcontroller-SAM3X-SAM3A_Datasheet.pdf&usg=AOvVaw1rt7QIPIgPCcuY6Eg1SAzz) 
 
 The new modules arrived and if they work (some don't which is again very frustrating as lot of time goes into finding the root cause) but if they work the signal is as expected much better. The tag/card still needs to be VERY close (1-2 mm) to the TX antenna to get the tags RN16 response. I guess I will have to live with that for now until I to my own design and allow for different antennas to be attached.
 
@@ -140,3 +140,6 @@ Unfortunately I accidently killed my Arduino Board. A wire got loose, touched th
 TODO:
 ![Reader-Tag-Communication](https://github.com/zaphoxx/zuhf-rfid/blob/main/images/successfull_tag_epc_signal.jpg)
 ![Tag Data From Response](https://github.com/zaphoxx/zuhf-rfid/blob/main/images/tag_data_epc.jpg)
+
+# Putting in all together
+TODO:
