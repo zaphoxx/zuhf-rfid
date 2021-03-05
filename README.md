@@ -161,7 +161,7 @@ The "reader" can read the tag in a distance range of about 1-2 cm. For the write
 
 I will be starting to setup a Howto guide in case someones wants to rebuild the reader for her own experiments. Below some screenshots / fotos of the reader in operation.
 
-(https://github.com/zaphoxx/zuhf-rfid/blob/main/images/uhfreader1.png)
-(https://github.com/zaphoxx/zuhf-rfid/blob/main/images/uhfreader3.png)
-(https://github.com/zaphoxx/zuhf-rfid/blob/main/images/uhfread3.png)
+![a](https://github.com/zaphoxx/zuhf-rfid/blob/main/images/uhfreader1.png)
+![b](https://github.com/zaphoxx/zuhf-rfid/blob/main/images/uhfreader3.png)
+![c](https://github.com/zaphoxx/zuhf-rfid/blob/main/images/uhfread3.png)
 
