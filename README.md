@@ -1,6 +1,8 @@
 # zuhf-rfid
 Blog about my journey investigation uhf-rfid with arduino and cc1101. This project has already been going on with more are less time spent for a few weeks and I decided now to put the information I learned along the way down as a resource mainly for myself but also to make it available for others who might be interested.
 
+![UHF-READER-SHIELD](https://github.com/zaphoxx/zuhf-rfid/blob/main/images/uhfreader2.png)
+
 ## Background
 The whole project came out of another project related to UHF-RFID but using SDR. The goal of the other project was to get an RFID reader up and running using SDR. Work has already been done on this field by nkargas and the project can be found here https://github.com/nkargas/Gen2-UHF-RFID-Reader. Based on nkargas project I could get a very basic RFID reader up and running. However the reader as developed by nkargas only reads out the tags EPC and basically stops there. Adam Laurie has started to take this a step further using a bladeRF and has published his fork of the original reader here https://github.com/AdamLaurie/Gen2-UHF-RFID-Reader.
 With SDR the critical part is usually the time between receiving the RN16 value from the tag and responding with an ACK (with the received RN16) to receive the actual EPC. Due to latencys this can be difficult to satisfy and makes the SDR solution sometimes unreliable.This problem has been outlined by the original authors and by others trying to implement the uhf rfid reader with SDR.
