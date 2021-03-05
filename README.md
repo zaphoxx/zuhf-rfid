@@ -137,9 +137,29 @@ The new modules arrived and if they work (some don't which is again very frustra
 Unfortunately I accidently killed my Arduino Board. A wire got loose, touched the board somewhere and ** poof ** lights out. Will need to order a new one which will take a couple of days before I will be able to continue working on the project. Seems like I am stuck at this stage for a while now. Hopefully by the weekend I will have all I need to get things foward next week.
 
 ## Getting tags EPC ##
-TODO:
 ![Reader-Tag-Communication](https://github.com/zaphoxx/zuhf-rfid/blob/main/images/successfull_tag_epc_signal.jpg)
 ![Tag Data From Response](https://github.com/zaphoxx/zuhf-rfid/blob/main/images/tag_data_epc.jpg)
 
 # Putting in all together
+It has been around 3 months now since I started this project and I have come a long way. It is finally working. I do have a simple but functional UHF RFID reader for 868MHz. Tags that are not password protected can be modified with these commands. For password protected tag I still need to implement the ACCESS command which will be next on the list. Currently the following commands are fully functional and implemented:
+
+* QUERY
+* ACK
+* REQ_RN
+* READ
+* WRITE
+* LOCK
+
 TODO:
+* ACCESS
+* KILL
+* AUTHENTICATE and related commands
+* ...
+
+In addition to the above commands I will start putting together a simple gui so that it is more user friendly to use.
+The "reader" can read the tag in a distance range of about 1-2 cm. For the write operation to work properly the tag needs to be in the 1cm range as the tags chip needs more power for write operations.
+
+I will be starting to setup a Howto guide in case someones wants to rebuild the reader for her own experiments. Below some screenshots / fotos of the reader in operation.
+
+
+
