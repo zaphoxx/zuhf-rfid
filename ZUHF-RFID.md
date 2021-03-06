@@ -1,4 +1,7 @@
-Name: ZUHF-RFID - Arduino Sketch to run a self build UHF RFID Reader (Read/Write)
+Name: ZUHF-RFID
+Description: Arduino Sketch to run a self build UHF RFID Reader (Read/Write);
+This sketch is specifically coded for the Arduino Due. It most likely will not 
+work with other Arduino boards. 
 Author:       Manfred Heinz
 Last Update:  06.03.2021
 Copyright (C) 2021  Manfred Heinz
