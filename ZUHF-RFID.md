@@ -27,14 +27,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
  
 ## Files:
 
-- ZUHF-RFID-DEV_06032021.7z
+- in folder ZUHF-RFID-DEV/ 
+    - ZUHF-RFID-DEV.ino
     - Main sketch file(s)
 
-- ZUHF_CC1101.zip 
+- in folder library/ZUHF_CC1101/
     - library to control the RX-Module (CC1101 Chip)
     - library with crc5 / crc16 functions needed
     - definitions for the CC1101 registers
     - Contains also files which define global vars
 
-- SPI_UART_CC1101.zip
+- in folder library/SPI_UART_CC1101/
     - library to control the TX-Module (CC1101 Chip)
