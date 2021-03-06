@@ -1,12 +1,14 @@
-Name: ZUHF-RFID
+# ZUHF-RFID
 
-Description: Arduino Sketch to run a self build UHF RFID Reader (Read/Write);
+## Name: ZUHF-RFID
+
+##Description: Arduino Sketch to run a self build UHF RFID Reader (Read/Write);
 This sketch is specifically coded for the Arduino Due. It most likely will not 
 work with other Arduino boards.
 
-Author:       Manfred Heinz
+## Author:       Manfred Heinz
 
-Last Update:  06.03.2021
+## Last Update:  06.03.2021
 
 Copyright (C) 2021  Manfred Heinz
 
@@ -23,7 +25,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
  
-Files:
+## Files:
 
 - ZUHF-RFID-DEV_06032021.7z
     - Main sketch file(s)
