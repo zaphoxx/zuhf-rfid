@@ -48,7 +48,7 @@ For the setup I use with the Arduino I have the following connections:
 * RF-MODULE VDD --> Arduino 3.3V connector
 * RF-MODULE GND --> Arduino GND
 Reference numbers are as printed on the board.
-
+![Wiring](https://github.com/zaphoxx/zuhf-rfid/blob/main/images/connections_tx_image.jpg)
 With the wiring complete we will next take a look on how to get the Arduino IDE started and a load a first test program. Keep fingers pressed so we will see a tag response in our SDR monitor.
 
 ## Things get started - observe your first tag response (hopefully!)
