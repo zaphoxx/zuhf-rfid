@@ -13,12 +13,14 @@ There are a few things that you will need to purchase before being able to put a
 * one or two UHF-RFID tags/cards to play with; make sure you pick the correct ones which operate at 868MHz, typically the cards operate in a wide range from ~860MHz-960MHz. !(https://www.amazon.de/-/en/Yaron-Iso18000-960MHz-H3-Alien-Plastic/dp/B072562JLS/ref=sr_1_3?dchild=1&keywords=uhf+rfid+karte&qid=1617356757&sr=8-3)
 * libraries and example Arduino sketches from here (https://github.com/zaphoxx/zuhf-rfid)
 
+
 ## Things you might want
 These are the things that are not necessary for the build but you might consider them as things will be much more difficult especially when trying to find the root cause of an issue.
 
 * HackRF One - Thats the one I used because I had it at hand. You dont need that specifically. Any SDR (Software Defined Radio) that can be used with gnuradio and which can receive at the working frequency of 868MHz should do. Check out the following website if you dont have one (https://blog.bliley.com/10-popular-software-defined-radios-sdr). It will give you a good overview of what is available to what price. The SDR is basically just for monitoring the signals send by the reader and by the tag/card. It will definitely make things much easier when you can monitor the signals the reader and tags send out. I wouldnt recommend going through this project without that. It also helps to understand what is happening under the hood. 
 * GnuRadio-Companion - Software to use your HackRF One or other SDR with. You can download the software here (https://wiki.gnuradio.org/index.php/InstallingGR)
 * PCB Board with the necessary wiring. This is basically just a 'UHF-RFID-Shield' for your Arduino Due. You might get away using cables and a breadboard (it does work). But it is much better if you do have a pcb board with the necessary wiring where things are fix and there is no danger of cables getting loose and accidently frying the Arduino Board (this did happen...). The downside is of course that you wont be able to quickly change input/output pins and similar. Maybe want to do the first steps with a breadboard and once you are confident things work as expected you can switch to a custom shield.
+* some basic familiarity with gnuradio, arduino, soldering and programming in general. 
 * e.g. wires, solderiron, etc. things you need to get your module connected to the arduino.
 * patience and persistance - thats a big one especially when things dont work as expected :)
 
