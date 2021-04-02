@@ -1,25 +1,7 @@
 /*
-	ZUHF_CC1101.cpp
+	ZUHF_CC1101_DUE
 	Basic CC1101 library for Arduino Due. It makes use of the Arduino SPI.h library.
 */
-/*  ZUHF_CC1101.cpp - Arduino Sketch to run a self build UHF RFID Reader (Read/Write)
-    Author:       Manfred Heinz
-    Last Update:  06.03.2021
-    Copyright (C) 2021  Manfred Heinz
-
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
 #ifndef ZUHF_CC1101_CPP
 #define ZUHF_CC1101_CPP
 
@@ -121,7 +103,7 @@ byte ZUHF_CC1101::Init()
   Serial.print("[RX] Partnumber:  0x");Serial.println(xpart, HEX);
   
   RegConfigSettings();							
-  SpiWriteBurstReg(CC1101_PATABLE,PaTable,8);
+	SpiWriteBurstReg(CC1101_PATABLE,PaTable,8);
   SpiStrobe(CC1101_SCAL);
   return xversion;
 }

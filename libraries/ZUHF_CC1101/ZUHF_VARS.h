@@ -1,28 +1,6 @@
 /*
 * global vars
 */
-/*
-	ZUHF_VARS.h
-	Basic CC1101 library for Arduino Due. It makes use of the Arduino SPI.h library.
-*/
-/*  ZUHF_VARS.h - Arduino Sketch to run a self build UHF RFID Reader (Read/Write)
-    Author:       Manfred Heinz
-    Last Update:  06.03.2021
-    Copyright (C) 2021  Manfred Heinz
-
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
 #ifndef ZUHF_VARS_H
 #define ZUHF_VARS_H
 
@@ -50,9 +28,13 @@ enum READER_STATES
   R_INIT,
 	R_WAIT,
 	R_START,
+  R_ACCESS,
 	R_SELECT,
 	R_QUERY,
 	R_QUERYREP,
+  R_REQRN,
+  R_READ,
+  R_WRITE,
 	R_QUERYADJ,
 	R_SEARCH_RN16,
 	R_ACK,
@@ -61,7 +43,8 @@ enum READER_STATES
 	R_POWERUP,
 	R_POWERDOWN,
   R_READDATA,
-	R_TEST
+	R_TEST,
+  R_QUERY_BAK // old code as backup
 };
 
 
@@ -133,6 +116,11 @@ const byte READ_CMD[] = {1,1,0,0,0,0,1,0};
  * WRITE
  */
 const byte WRITE_CMD[] = {1,1,0,0,0,0,1,1};
+
+/* 
+ * BLOCKWRITE
+ */
+const byte BLOCKWRITE_CMD[] = {1,1,0,0,0,1,1,1};
 
 /*
  * LOCK

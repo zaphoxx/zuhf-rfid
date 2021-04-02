@@ -14,38 +14,37 @@
  *  --> CSS  : PIN 23 (A.14)
  */
 
-/*  SPI_UART_CC1101.h - Arduino Sketch to run a self build UHF RFID Reader (Read/Write)
-    Author:       Manfred Heinz
-    Last Update:  06.03.2021
-    Copyright (C) 2021  Manfred Heinz
-
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
 #ifndef SPI_UART_CC1101_h
 #define SPI_UART_CC1101_h
 #include <arduino.h>
 
 /********************** GDO PINS ********************************/
+//setup holistical
 #define TX_GDO0_PIN 34 // PORTC2
 #define TX_GDO2_PIN 36 // PORTC4
+
+//setup v1b w/ tft
+//#define TX_GDO0_PIN 27 // PORTD2
+//#define TX_GDO2_PIN 29 // PORTD6
+
 #define TX_SS_PIN 23
+//setup holistical
 #define TX_GDO0_PIO 2
 #define TX_GDO2_PIO 4
 
+//setup holistical
+//#define TX_GDO0_PIO 2
+//#define TX_GDO2_PIO 6
+
+//setup holistical
 /* fast digital read for GDO pins */
 #define TX_GDO0_STATE (((PIOC->PIO_PDSR) & (1 << TX_GDO0_PIO)) >> TX_GDO0_PIO)
 #define TX_GDO2_STATE (((PIOC->PIO_PDSR) & (1 << TX_GDO2_PIO)) >> TX_GDO2_PIO)
+
+//setup v1b
+//#define TX_GDO0_STATE (((PIOD->PIO_PDSR) & (1 << TX_GDO0_PIO)) >> TX_GDO0_PIO)
+//#define TX_GDO2_STATE (((PIOD->PIO_PDSR) & (1 << TX_GDO2_PIO)) >> TX_GDO2_PIO)
+
 /****************************************************************/
 
 class SPI_UART_CC1101 {

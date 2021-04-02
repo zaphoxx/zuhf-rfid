@@ -1,26 +1,3 @@
-/*
-	ZUHF_CC1101_CRC.h
-	Basic CC1101 library for Arduino Due. It makes use of the Arduino SPI.h library.
-*/
-/*  ZUHF_CC1101_CRC.h - Arduino Sketch to run a self build UHF RFID Reader (Read/Write)
-    Author:       Manfred Heinz
-    Last Update:  06.03.2021
-    Copyright (C) 2021  Manfred Heinz
-
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-
 #ifndef ZUHF_CRC_H
 #define ZUHF_CRC_H
 
@@ -51,8 +28,8 @@ bool check_crc16(byte *data, uint32_t num_bytes)
   crc_16 = ~crc_16;
   
   if(Serial){
-    Serial.print("[CRC16] CALC CRC16: ");Serial.println(crc_16,HEX);
-    Serial.print("[CRC16] RCVD CRC16: ");Serial.println(rcvd_crc,HEX);
+    //Serial.print("[CRC16] CALC CRC16: ");Serial.println(crc_16,HEX);
+    //Serial.print("[CRC16] RCVD CRC16: ");Serial.println(rcvd_crc,HEX);
   }
   if(rcvd_crc != crc_16)
     return false;
