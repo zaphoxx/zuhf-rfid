@@ -1,6 +1,6 @@
 # zuhf-rfid
 Blog about my journey investigation uhf-rfid with arduino and cc1101. This project has already been going on with more are less time spent for a few weeks and I decided now to put the information I learned along the way down as a resource mainly for myself but also to make it available for others who might be interested. 
-[Updated 05.03.2021] Image below shows the UHF-Reader. It works for the currently implemented commands (see which commands at the bottom of the page). 
+[Updated 05.03.2021] Image below shows the UHF-Reader. It works for the currently implemented commands (see which commands at the bottom of the page). I started putting a HOWTO guide together in case you are interested in going into that direction. As of today Part1 of the HOWTO is ready, any feedback for improvements is highly appreciated. Other than that enjoy.
 
 ![UHF-READER-SHIELD](https://github.com/zaphoxx/zuhf-rfid/blob/main/images/uhfreader2.png)
 
