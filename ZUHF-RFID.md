@@ -39,3 +39,167 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 - in folder library/SPI_UART_CC1101/
     - library to control the TX-Module (CC1101 Chip)
+- in folder cli/
+    - zuhf-cli.py - python commandline interface
+
+## zuhf-cli.py
+
+### usage
+
+```bash
+
+    └─$ sudo python3 zuhf-cli.py -h                                                                                                                                              
+
+     @@@@@@@@ @@@  @@@ @@@  @@@ @@@@@@@@      @@@@@@@  @@@@@@@@ @@@ @@@@@@@
+          @@! @@!  @@@ @@!  @@@ @@!           @@!  @@@ @@!      @@! @@!  @@@
+        @!!   @!@  !@! @!@!@!@! @!!!:!        @!@!!@!  @!!!:!   !!@ @!@  !@!
+      !!:     !!:  !!! !!:  !!! !!:           !!: :!!  !!:      !!: !!:  !!!
+     :.::.: :  :.:: :   :   : :  :             :   : :  :       :   :: :  : 
+
+
+   usage: zuhf-cli.py [-h] [-p PORT] [-b BAUDRATE] [-tp {17,18,19,20,21,22}] [-t TIMEOUT] [-r REPETITIONS] [-block BLOCK_ADDR] [-mem {0,1,2,3}] [-n N_WORDS] [-data DATA] [-write]
+                      [-lock]
+
+   optional arguments:
+     -h, --help            show this help message and exit
+     -p PORT               serial port e.g. COM7,COM14
+     -b BAUDRATE           baudrate of serial
+     -tp {17,18,19,20,21,22}
+                           tx_power - index
+     -t TIMEOUT            serial read timeout
+     -r REPETITIONS        repetitions to run
+     -block BLOCK_ADDR     blockaddress to read/write from
+     -mem {0,1,2,3}        memory block to read / write from e.g. user block
+     -n N_WORDS            read n words from mem block, max is 32 words
+     -data DATA            word data to write to mem block
+     -write
+     -lock
+```
+#### Selecting the right port
+To find the right port you can use the following command
+```
+└─$ sudo dmesg | grep -i '\(arduino\|tty\)'
+[    0.610773] printk: console [tty0] enabled
+[    3.391005] 00:05: ttyS0 at I/O 0x3f8 (irq = 4, base_baud = 115200) is a 16550A
+[    3.402548] 00:06: ttyS1 at I/O 0x2f8 (irq = 3, base_baud = 115200) is a 16550A
+[    6.541678] systemd[1]: Created slice system-getty.slice.
+[33709.456826] usb 2-2.2: Product: Arduino Due Prog. Port
+[33709.456827] usb 2-2.2: Manufacturer: Arduino (www.arduino.cc)
+[33709.498375] cdc_acm 2-2.2:1.0: ttyACM0: USB ACM device
+```
+In the example above you can see that my Arduino Due is connected at ```/dev/ttyACM0```. 
+
+### Running the reader with zuhf-cli.py
+So to run a simple command you can then do
+```
+└─$ sudo python3 zuhf-cli.py -p /dev/ttyACM0
+
+ @@@@@@@@ @@@  @@@ @@@  @@@ @@@@@@@@      @@@@@@@  @@@@@@@@ @@@ @@@@@@@
+      @@! @@!  @@@ @@!  @@@ @@!           @@!  @@@ @@!      @@! @@!  @@@
+    @!!   @!@  !@! @!@!@!@! @!!!:!        @!@!!@!  @!!!:!   !!@ @!@  !@!
+  !!:     !!:  !!! !!:  !!! !!:           !!: :!!  !!:      !!: !!:  !!!
+ :.::.: :  :.:: :   :   : :  :             :   : :  :       :   :: :  : 
+
+
+[info] Using following settings:
+-----------------------------------
+port      :         /dev/ttyACM0
+baudrate  :               250000
+tx_power  :                   22
+timeout   :                    3
+repetitions:                 1000
+block_addr:                    0
+mem_block :                    3
+n_words   :                    1
+data      :                 1337
+write_flag:                False
+lock_flag :                False
+-----------------------------------
+<press 'return' to start>
+
+b'REP#'
+b'TXP#'
+b'READ#'
+b'DUMMY#'                                                                       
+b'RUN#'
+[TAG-DATA]/HANDLE] OK                                                           
+##############################################################
+Stored PC: 0x34 0x0
+```
+So running the cli without other arguments will repeat 1000 times to try to read the first word from user memory (memory block 3). This would be equivalent to the following command
+```
+sudo python3 zuhf-cli.py -p /dev/ttyACM0 -n 1 -mem 3
+```
+where parameter ```-n 2``` defines the number of words to read and ```-mem 3``` defines from which memory block the reader should pull the information. You can also define from which block address you want to start reading by using the parameter ```-block <addr>``` where address is 0th,1st,2nd,3rd,4th,... word of memblock.
+e.g.
+```
+sudo python3 zuhf-cli.py -p /dev/ttyACM0 -n 1 -mem 3 -block 4
+```
+will try to read 2 words from memory block 3 starting at the 4th word of the memory block.
+
+!ATTENTION! From my experience it is safe to read up to 8 words at once. Trying to read more than that might cause inconsistent results and is not recommended. It is safer to perform multiple reads with a smaller amount of words.
+
+#### writing data to the tag/card
+You can write data to a memory block (if not locked) using the following command
+```
+└─$ sudo python3 zuhf-cli.py -p /dev/ttyACM0 -mem 3 -n 2 -data 'deadbeef' -write 
+
+ @@@@@@@@ @@@  @@@ @@@  @@@ @@@@@@@@      @@@@@@@  @@@@@@@@ @@@ @@@@@@@
+      @@! @@!  @@@ @@!  @@@ @@!           @@!  @@@ @@!      @@! @@!  @@@
+    @!!   @!@  !@! @!@!@!@! @!!!:!        @!@!!@!  @!!!:!   !!@ @!@  !@!
+  !!:     !!:  !!! !!:  !!! !!:           !!: :!!  !!:      !!: !!:  !!!
+ :.::.: :  :.:: :   :   : :  :             :   : :  :       :   :: :  : 
+
+
+[WARNING]You are about to potentially overwrite data!!!
+<continue y/n ?>y
+[info] Using following settings:
+-----------------------------------
+port      :         /dev/ttyACM0
+baudrate  :               250000
+tx_power  :                   22
+timeout   :                    3
+repetitions:                 1000
+block_addr:                    0
+mem_block :                    3
+n_words   :                    2
+data      :             deadbeef
+write_flag:                 True
+lock_flag :                False
+-----------------------------------
+<press 'return' to start>
+
+b'\xde\xad\xbe\xef'
+b'#'
+b'#'
+b'#'
+b'#'
+b'#'
+b'#'
+b'#'
+b'#'
+b'REP#'
+b'TXP#'
+b'WRITE#'
+b'#WRITE1#'                                                                     
+b'#WRITE MODE#'                                                                 
+b'DUMMY#'
+b'RUN#'
+[TAG-DATA]/HANDLE] OK                                                           
+##############################################################
+Stored PC: 0x34 0x0
+EPC: 0xe2 0x0 0x0 0x1b 0x95 0x17 0x1 0x84 0x12 0x10 0xbe 0xef
+CRC16: 0x74 0x4b
+##############################################################
+# WRITE # deadbeef written to MEMBLOCK 3 ADDR 0 #                               
+# WRITE # deadbeef written to MEMBLOCK 3 ADDR 0 #                               
+b'read nWords: #'
+b'2#'
+[MEM BLOCK 3]
+###############
+0x000000: de ad
+0x000001: be ef
+###############
+```
+So to write data you need to provide the ```-write``` parameter and the ```-data <data>``` parameter with the data to write. The data needs to be in hex format MSB first and the number of bytes provided needs to be a multiple of 2 (n words). If the write is successful it will try to read n words as specified by parameter ```-n``` from the specified memory location so you can verify the write.
+
