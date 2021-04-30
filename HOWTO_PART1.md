@@ -67,10 +67,3 @@ Once you uploaded the sketch to the arduino due and all is connected properly yo
 Don't worry if you do not see a tag response right away. As long as you can observe a proper query signal it might just take some patience to find the right distance and orientation to the antenna (tag <-> antenna <-> hackrf antenna). Once you get a signal play around with the antennas orientation (SDR antenna vs. rf-module antenna vs. tag orientation) to improve your observed signal.
 
 Congratulations! Your rf-module can "communicate" with UHF-RFID card/tag.
-
-## Things behind the curtain - what is happening ?
-
-In this section I will briefly go thru the main code of the arduino sketch, what it does and what you see in the signals you observed.
-
-
-
