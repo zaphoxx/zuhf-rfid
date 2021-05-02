@@ -85,7 +85,6 @@ def update_parameters(ser, args):
   
 # process arguments    
 def process_args(parser):
-    # remote host, port, coldfusion basepath and file to upload
     parser.add_argument('-p', dest='port', help='serial port e.g. COM7,COM14', default='COM14')
     parser.add_argument('-b', dest='baudrate', type=int, help='baudrate of serial', default=250000)
     parser.add_argument('-tp', dest='tx_power', choices=[0x11,0x12,0x13,0x14,0x15,0x16],type=int,help='tx_power - index', default=0x16)
