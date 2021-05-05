@@ -44,7 +44,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 ## Installation
 - Copy the library folders ```./ZUHF_CC1101/``` and ```./SPI_UART_CC1101/``` into your Arduino library folder ```<ArduinoPath>/library/```. 
-- Copy the folder ```./ZUHF-RFID-DEV/``` into your Arduino Projects/Sketch folder.
+- Copy the folder ```./ZUHF-RFID/``` into your Arduino Projects/Sketch folder.
 - Open the Arduino IDE, open the ZUHF-RFID.ino sketch.
 - Select your Arduino Due board in the 'Tools' section and select the port your board is connected to.
 - Upload the sketch to the board.
