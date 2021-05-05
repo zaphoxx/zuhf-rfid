@@ -44,7 +44,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 ## zuhf-cli.py
 
-### usage
+### usage (zuhf-cli.py needs to be run as privileged user otherwise you wont be able to connect with the port)
 
 ```bash
 
