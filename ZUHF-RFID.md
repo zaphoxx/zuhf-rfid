@@ -27,20 +27,20 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
  
 ## Files:
 
-- in folder ZUHF-RFID-DEV/ 
-    - ZUHF-RFID-DEV.ino
+- in folder ```ZUHF-RFID/``` 
+    - ```ZUHF-RFID.ino```
     - Main sketch file(s)
 
-- in folder library/ZUHF_CC1101/
+- in folder ```library/ZUHF_CC1101/```
     - library to control the RX-Module (CC1101 Chip)
     - library with crc5 / crc16 functions needed
     - definitions for the CC1101 registers
     - Contains also files which define global vars
 
-- in folder library/SPI_UART_CC1101/
+- in folder ```library/SPI_UART_CC1101/```
     - library to control the TX-Module (CC1101 Chip)
-- in folder cli/
-    - zuhf-cli.py - python commandline interface
+- in folder ```cli/```
+    - ```zuhf-cli.py``` - python commandline interface
 
 ## Installation
 - Copy the library folders ```./ZUHF_CC1101/``` and ```./SPI_UART_CC1101/``` into your Arduino library folder ```<ArduinoPath>/library/```. 
