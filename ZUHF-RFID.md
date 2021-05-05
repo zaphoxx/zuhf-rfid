@@ -8,7 +8,7 @@ work with other Arduino boards.
 
 ## Author:       Manfred Heinz
 
-## Last Update:  06.03.2021
+## Last Update:  05.05.2021
 
 Copyright (C) 2021  Manfred Heinz
 
