@@ -16,7 +16,7 @@
 
 #ifndef SPI_UART_CC1101_h
 #define SPI_UART_CC1101_h
-#include <arduino.h>
+#include <Arduino.h>
 
 /********************** GDO PINS ********************************/
 //setup holistical

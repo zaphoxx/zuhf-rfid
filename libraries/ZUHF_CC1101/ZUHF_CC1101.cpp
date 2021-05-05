@@ -7,7 +7,7 @@
 
 #include <ZUHF_CC1101.h>
 #include <ZUHF_CC1101_REGS.h>
-#include <arduino.h>
+//#include <arduino.h>
 
 /****************************************************************
 *FUNCTION NAME:SpiInit

@@ -1,22 +1,3 @@
-/*  ZUHF-RFID - Arduino Sketch to run a self build UHF RFID Reader (Read/Write)
-    Author:       Manfred Heinz
-    Last Update:  06.03.2021
-    Copyright (C) 2021  Manfred Heinz
-
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-
 #ifndef UHF_RFID_H
 #define UHF_RFID_H
 
@@ -76,7 +57,10 @@ void transformCRC16ToBitarray(byte *bitarray, uint16_t data);
 void data_to_bitarray(byte *bitarray, byte *data, byte numbytes);
 /* ******************************************************************************** */
 
-
+/* DEBUG FUNCTIONS */
+void debug(String message);
+void debug(byte *data, int data_size);
+/* ******************************************************************************** */
 
 
 /********************************************************************************************************************************
@@ -127,7 +111,7 @@ void send_query_cmd(  byte datarate,      // (0,1)
                       byte target,        // t = (0,1)
                       byte q)             // q = (0,15)
 {
-  Serial.println("[SEND QUERY]");
+  //Serial.println("[SEND QUERY]");
   byte buffer[BUFFERSIZE];
   byte query[QUERYSIZE];
   byte encoded_query[BUFFERSIZE];
@@ -186,7 +170,7 @@ void send_ack(byte *rn_bits)
   buffersize += sizeof(FRAMESYNC);
   memcpy(ack_bits, ACK, sizeof(ACK));
   offset += sizeof(ACK);
-  Serial.println();
+  //Serial.println();
   /* if not in open state then send RN16_Bits */
   /* else send the HANDLE_Bits aquired from the req_rn command */
   /* this differentiation is important, so make sure you provided
@@ -214,7 +198,7 @@ void send_ack(byte *rn_bits)
 **********************************************************************************************************************************/
 void send_write(byte membank, uint32_t address, uint16_t data, byte *handle_bits, byte *rn16_bits)
 { 
-  Serial.println("[SEND WRITE]");
+  //Serial.println("[SEND WRITE]");
   uint32_t tmp = address;
   uint32_t evb_size = 0;
   
@@ -274,6 +258,76 @@ void send_write(byte membank, uint32_t address, uint16_t data, byte *handle_bits
 
 
 /********************************************************************************************************************************
+* FUNCTION NAME: send_blockwrite()
+* FUNCTION     : send write command to tag
+* INPUT        : membank: memorybank to write to (0-3)
+                 address: address to write to (e.g. 0 - first word of memorybank, 1 - second word of memorybank)
+                 data: data to write to memorybank as bytearray(e.g. 0xCAFE)
+                 n_bytes: number of data bytes
+* OUTPUT       : none
+**********************************************************************************************************************************/
+void send_blockwrite(byte membank, uint32_t address, byte n_bytes, uint8_t *data,  byte *handle_bits, byte *rn16_bits)
+{ 
+  //Serial.println("[SEND WRITE]");
+  uint32_t tmp = address;
+  uint32_t evb_size = 0;
+  
+  /* convert address to ebv format */
+  byte evb[evb_size];
+  evb_size = convert_to_evb(evb, address);
+  
+  byte evb_bits[evb_size * 8];
+  data_to_bitarray(evb_bits, evb, evb_size);
+
+  /* ******************************* */
+  /* ***** XOR data and rn16  ***** */
+  /* ******************************* */
+  byte rn16[2];
+  generate_bytes(rn16, rn16_bits, 16);
+  /* ******************************* */
+   
+  byte write_bits[512];
+  byte data_bits[512];
+  byte encoded_cmd[512];
+  byte size_bits[8];
+  int nBytesToSend = 0;
+  byte buffer[512];
+  byte txbuffer[512];
+  int buffersize = 0;
+  byte n_words = n_bytes / 2;
+  data_to_bitarray(data_bits, data, n_bytes); // bit array size 8*n_bytes
+  data_to_bitarray(size_bits, &n_words, 1);
+  memcpy(buffer, FRAMESYNC, sizeof(FRAMESYNC));
+  buffersize += sizeof(FRAMESYNC);
+  
+  byte offset = 0;
+  memcpy(write_bits, BLOCKWRITE_CMD, sizeof(BLOCKWRITE_CMD));
+  offset += sizeof(WRITE_CMD);
+  memcpy(write_bits + offset, MEM_BANK[membank], sizeof(MEM_BANK[membank]));
+  offset += sizeof(MEM_BANK[membank]);
+  memcpy(write_bits + offset, evb_bits, sizeof(evb_bits));
+  offset += sizeof(evb_bits);
+  memcpy(write_bits + offset, size_bits, sizeof(size_bits)); 
+  offset += sizeof(size_bits);
+  memcpy(write_bits + offset, data_bits, sizeof(data_bits));
+  offset += sizeof(data_bits);
+  memcpy(write_bits + offset, handle_bits, 16);
+  offset += 16;
+  byte crc16_bits[16];
+  crc16B(crc16_bits, write_bits, offset);
+  memcpy(write_bits + offset, crc16_bits, sizeof(crc16_bits));
+  offset += sizeof(crc16_bits);
+  
+  byte encoded_size = encode_data(encoded_cmd, write_bits, offset);
+
+  memcpy(buffer + buffersize, encoded_cmd, encoded_size);
+  buffersize += encoded_size;
+  nBytesToSend = generate_bytes(txbuffer, buffer, buffersize);
+  TX_UNIT.UpdateFifo(txbuffer,nBytesToSend);
+}
+
+
+/********************************************************************************************************************************
 * FUNCTION NAME: send_read()
 * FUNCTION     : send read command to tag
 * INPUT        : membank: memorybank to read from (0-3)
@@ -283,7 +337,7 @@ void send_write(byte membank, uint32_t address, uint16_t data, byte *handle_bits
 **********************************************************************************************************************************/
 void send_read(byte membank, uint32_t address, byte nwords, byte *handle_bits)
 {
-  Serial.println("[SEND READ]");
+  //Serial.println("[SEND READ]");
   byte wordcount[8];
   uint32_t evb_size = 0;
   
@@ -341,7 +395,7 @@ void send_read(byte membank, uint32_t address, byte nwords, byte *handle_bits)
 **********************************************************************************************************************************/
 void send_req_rn(byte *rn_bits) // handle size is 16 bits
 {
-  Serial.println("[SEND REQ_RN]");
+  //Serial.println("[SEND REQ_RN]");
   byte req_rn_bits[40];
   
   memcpy(req_rn_bits, REQ_RN, sizeof(REQ_RN));
@@ -378,7 +432,7 @@ void send_req_rn(byte *rn_bits) // handle size is 16 bits
 **********************************************************************************************************************************/
 void send_lock(byte *lock_mask, byte *lock_action, byte *handle_bits)
 { 
-  Serial.println("[SEND LOCK]");
+  //Serial.println("[SEND LOCK]");
   #define LOCK_MASK_SIZE 10
   byte lock_bits[512];
   byte encoded_query[512];
@@ -632,7 +686,7 @@ bool read_RN16(byte *rn16)
   const byte t1 = dT1; // adjust if necessary
   bool found = false;
   byte rxbuffer[512];
-  Serial.println("[READ RN16] *");
+  //Serial.println("[READ RN16] *");
   RX_UNIT.SpiWriteReg(CC1101_PKTLEN, RN16_LEN);
   RX_UNIT.SpiStrobe(CC1101_SRX);
   TX_UNIT.SendCW(16);
@@ -665,7 +719,7 @@ bool read_RN16(byte *rn16)
  *  crc16 check takes place.
  */
 bool read_Handle(byte *rn_bits){
-  Serial.println("[READ RN16/HANDLE] *");
+  //Serial.println("[READ RN16/HANDLE] *");
   bool found = false;
   bool crc16_ok = false;
   byte rxbuffer[64];
@@ -709,7 +763,7 @@ bool read_Handle(byte *rn_bits){
 *                epc_data structure but the crc16 flag will set to false;
 **********************************************************************************************************************************/
 bool read_epc(EPC_DATA *tag_epc){
-  Serial.println("[READ EPC] *");
+  //Serial.println("[READ EPC] *");
   #define PLEN 32
   bool found = false;
   bool crc_ok = false;
@@ -719,13 +773,18 @@ bool read_epc(EPC_DATA *tag_epc){
   
   RX_UNIT.SpiWriteReg(CC1101_PKTLEN,PLEN);
   RX_UNIT.SpiStrobe(CC1101_SRX);
-  
-  TX_UNIT.SendCW(14);
+
+  /* If the Reader has difficulties finding the epc or performing other actions after reading the epc
+   *  then you might try to tune the value for TX_UNIT.SendCW(xx) a bit. Try to make it as low as
+   *  possible. Values > 14 are typically to long and will violate the max repsonse time reader -> tag.
+   *  If the value is to low then the reader might not have enough time to capture the radiosignal.
+   */
+  TX_UNIT.SendCW(14); // critical value, change only if really necessary and you know what you are doing!
   while(TX_GDO0_STATE)
   {
     if (RX_GDO0_STATE)
     {
-      TX_UNIT.SendCW(32);
+      TX_UNIT.SendCW(32); // similar to above but not as sensitive as above.
       while(RX_GDO0_STATE);
       RX_UNIT.SpiReadBurstReg(CC1101_RXFIFO, epc_data, PLEN);
       found = true;
@@ -753,14 +812,14 @@ bool read_epc(EPC_DATA *tag_epc){
       crc_ok = true;
       /* ---------------------------------------------------------*/
       /* TODO: temporarily in - needs to be removed in the future */
-      collect_epc_data(epc_bytes);
+      //collect_epc_data(epc_bytes);
       /* ---------------------------------------------------------*/
       Serial.println("[READ EPC] OK");
     }else{
-      Serial.println("[READ EPC] ERROR - CRC ERROR");
+      //Serial.println("[READ EPC] ERROR - CRC ERROR");
     }
   }else{
-    Serial.println("[READ EPC] ERROR - EPC NOT FOUND");
+    //Serial.println("[READ EPC] ERROR - EPC NOT FOUND");
   }
   tag_epc->crc_ok = crc_ok;
   return crc_ok;  
@@ -796,7 +855,7 @@ bool read_data(byte *data, byte nwords)
   TX_UNIT.SendCW(14);
   while(TX_GDO0_STATE){
     if(RX_GDO0_STATE){
-      TX_UNIT.SendCW(packetlength + 10);
+      TX_UNIT.SendCW(packetlength * 2);
       bytes_received = 0;
       while(RX_GDO0_STATE);
       RX_UNIT.SpiReadBurstReg(CC1101_RXFIFO, rxbuffer, packetlength);
@@ -809,14 +868,9 @@ bool read_data(byte *data, byte nwords)
     decodeFM0(data_bits, rxbuffer, packetlength);
     int data_size = generate_bytes(data_bytes, data_bits + 1, nwords * 16);
     memcpy(data, data_bytes, data_size);
-    Serial.print("[READ DATA] ");
-    for (int i = 0; i < data_size; i++){
-      Serial.print(data_bytes[i],HEX);Serial.print(" ");
-      if ((i+1) % 8 == 0) Serial.println();
-    }
-    Serial.println();
+    //debug(data, data_size);
   }else{
-    Serial.print("[READ DATA] ERROR");
+    //Serial.print("[READ DATA] ERROR");
   }
   return packet_received;
 }
@@ -839,7 +893,7 @@ bool search_write_ack()
   bool crc_ok = false;
   byte rxbuffer[10]; // ( 16 RN16 + 16 CRC + 1 ) * 2 Bits
   byte databuffer[128];
-  Serial.println("[SEARCH WRITE ACK] *");
+  //Serial.println("[SEARCH WRITE ACK] *");
   RX_UNIT.SpiWriteReg(CC1101_PKTLEN, 10);
   RX_UNIT.SpiStrobe(CC1101_SRX);
   TX_UNIT.SendCW(64);
@@ -856,7 +910,7 @@ bool search_write_ack()
   }
   if (found)
   {
-    Serial.println("[WRITE RESPONSE] *");
+    //Serial.println("[WRITE RESPONSE] *");
     decodeFM0(databuffer, rxbuffer, 10);
   }
   
@@ -869,14 +923,13 @@ bool search_write_ack()
     if (rcrc16[0] == (byte)(ccrc16 >> 8) and rcrc16[1] == (byte)(ccrc16 & 0x00ff))
     {
       crc_ok = true;
-      Serial.println("[WRITE] SUCCESS");
+      Serial.println("WRITE#OK#");
     }
   }else{
-    Serial.println("[WRITE RESPONSE] ERROR RESPONSE!");
+    //Serial.println("[WRITE RESPONSE] ERROR RESPONSE!");
   }
   return crc_ok;
 }
-
 
 
 /* TODO SECTION */
@@ -892,3 +945,23 @@ void collect_epc_data(byte *data)
   tags_found++;
 }
 #endif
+
+
+/* debug(msg)/debug(data) - simple functions to send debug messages via serial communication */
+void debug(String message)
+{
+  // Send Identifier '#DEBUG'
+  Serial.println("#DEBUG");
+  Serial.print(message);
+  Serial.println("#");
+}
+
+void debug(byte *data, int data_size)
+{
+  Serial.println("#DEBUG");
+  for (int i = 0; i < data_size; i++){
+    Serial.print(data[i], HEX);
+    Serial.print(" ");
+  }
+  Serial.println("#");
+}

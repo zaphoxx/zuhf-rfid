@@ -8,7 +8,7 @@
 #ifndef ZUHF_CC1101_h
 #define ZUHF_CC1101_h
 
-#include "arduino.h"
+#include "Arduino.h"
 #include <SPI.h>
 
 //SPI PINS

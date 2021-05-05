@@ -27,20 +27,20 @@ def main():
       
     time.sleep(2)
     
-    ser.write(F'REP#{args.repetitions}#'.encode('UTF-8'))
-    ser.write(F'TXP#{args.tx_power}#'.encode('UTF-8'))
+    ser.write(F'REP#{args.repetitions}#'.encode('latin-1'))
+    ser.write(F'TXP#{args.tx_power}#'.encode('latin-1'))
     
     if (args.lock_flag):
-      ser.write(F'LOCK#'.encode('UTF-8'))
+      ser.write(F'LOCK#'.encode('latin-1'))
       # send data bits
     elif (args.write_flag):
-      ser.write(F'WRITE#'.encode('UTF-8'))
-      ser.write(F"{args.mem_block}#{args.block_addr}#{args.n_words}#".encode('UTF-8'))
+      ser.write(F'WRITE#'.encode('latin-1'))
+      ser.write(F"{args.mem_block}#{args.block_addr}#{args.n_words}#".encode('latin-1'))
       print(bytes.fromhex(args.data))
       ser.write(bytes.fromhex(args.data))
     else:
-      ser.write(F'READ#'.encode('UTF-8'))
-      ser.write(F"{args.mem_block}#{args.block_addr}#{args.n_words}#".encode('UTF-8'))
+      ser.write(F'READ#'.encode('latin-1'))
+      ser.write(F"{args.mem_block}#{args.block_addr}#{args.n_words}#".encode('latin-1'))
     
     
     # RUN SCAN #
@@ -72,7 +72,7 @@ def main():
         line = ser.readline().rstrip()
         print(line);
       else:
-        print(line.decode('UTF-8').ljust(80,' '),end='\r',flush=True)
+        print(line.decode('latin-1').ljust(80,' '),end='\r',flush=True)
     
     if ser.isOpen():
       ser.close()
