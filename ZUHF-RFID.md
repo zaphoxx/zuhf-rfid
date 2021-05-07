@@ -52,7 +52,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 - Now you can use the CLI tool ```zuhf-cli.py``` as described below. Make sure you note which port your board is connected to.
 
 ## zuhf-cli.py
-
+zuhf-cli.py is a simple python based command line interface to control the zuhf-rfid-reader. The cli requires python3 to be installed but other then that there are no other special libraries needed other then the standarts which are included with a fresh python3 installation. The cli communicates via serial communication with the reader. Make sure you check which usb port your reader is connected to. on windows this would be e.g. comXX whereas on linux that will be e.g. /dev/ttyACMx.
 ### usage (zuhf-cli.py needs to be run as privileged user otherwise you wont be able to connect with the port)
 
 ```bash
