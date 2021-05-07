@@ -43,7 +43,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     - ```zuhf-cli.py``` - python commandline interface
 
 ## Installation
-- Copy the library folders ```./ZUHF_CC1101/``` and ```./SPI_UART_CC1101/``` into your Arduino library folder ```<ArduinoPath>/library/```. 
+- import the zip files (libraries) with the Arduino Ide using ```Sketch-->Include Library-->Add .ZIP Library```, select the zip files SPI_UART_CC1101.zip and ZUHF_CC1101.zip for import.	
 - Copy the folder ```./ZUHF-RFID/``` into your Arduino Projects/Sketch folder.
 - Open the Arduino IDE, open the ZUHF-RFID.ino sketch.
 - Select your Arduino Due board in the 'Tools' section and select the port your board is connected to.
