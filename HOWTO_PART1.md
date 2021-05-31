@@ -53,6 +53,13 @@ Reference numbers are as printed on the board.
 ![Wiring](https://github.com/zaphoxx/zuhf-rfid/blob/main/images/connections_tx_image.jpg)
 With the wiring complete we will next take a look on how to get the Arduino IDE started and a load a first test program. Keep fingers pressed so we will see a tag response in our SDR monitor.
 
+The CC1101 Chip will be configured by the Arduino library with the following main parameters:
+
+* Working Freq. 868MHz
+* Bandwidth ~200kHz
+* Datarate 80kBaud (corresponding to a 12,5µs pulse width)
+* Modulation OOK/ASK)
+
 ## Things get started - observe your first tag response (hopefully!)
 
 Ok, so now you have the wiring complete and are eager to see the rf module in action. Ok!
