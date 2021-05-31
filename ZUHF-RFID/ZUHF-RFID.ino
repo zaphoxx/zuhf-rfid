@@ -149,7 +149,7 @@ byte cmd_bytes[256];
 byte serial_data;
 String cmd_string;
 //M_STATES current_Menu;
-boolean write_flag=false, read_flag=false, block_flag=false, lock_flag=false;
+boolean write_flag=false, read_flag=false, block_flag=false, lock_flag=false, epc_found=false;
 EPC_DATA tag_data;
 
 /* MEMBLOCK READ/WRITE VARS */
@@ -202,6 +202,7 @@ void loop()
       /* reset all necessary variables */
       
       counter = 0;
+      epc_found = 0;
       tags_found = 0;
       tx_version = TX_UNIT.Init(); // Based on SPI_UART_CC1101.h lib
       rx_version = RX_UNIT.Init(); // Based on Arduino SPI.h and ZUHF_CC1101.h lib
@@ -309,58 +310,69 @@ void loop()
         if (read_epc(&tag_data))
         {
           LED_RED_ON;
-          send_req_rn(RN16_Bits);
-          if (read_Handle(HANDLE_Bits))
-          {
-            TX_UNIT.SendCW(50);
-            leds[0] = CRGB::Blue;
-            leds[1] = CRGB::Green;
-            FastLED.show();
-            
-            Serial.println("#TAGDATA");
-            Serial.write(tag_data.stored_pc,2);
-            Serial.write(tag_data.epc,12);
-            Serial.write(tag_data.crc16,2);
-            //debug(String(write_flag));
-            if (read_flag)
-            {
-              reader_state = R_READ;
-              counter = 0;
-            }
-            else if(write_flag)
-            {
-              reader_state = R_WRITE;
-              counter = 0;
-            }
-            else if(lock_flag)
-            {
-              reader_state = R_LOCK;
-              counter = 0;
-            }
-            else
-            {
-              reader_state = R_POWERDOWN;
-              counter = repetitions;
-            }
+          epc_found = true;
+          // If only reading epc then set counter to max
+          // and break out
+          if ( !read_flag && !write_flag && !lock_flag ){
+            counter = repetitions;
           }
           else
           {
-            counter++;
-            leds[0] = CRGB::Orange;
-            leds[1] = CRGB::Orange;
-            FastLED.show();
-            LED_BLUE_OFF;
-            LED_RED_OFF;
+            send_req_rn(RN16_Bits);
+          
+            if (read_Handle(HANDLE_Bits))
+            {
+              TX_UNIT.SendCW(50);
+              leds[0] = CRGB::Blue;
+              leds[1] = CRGB::Green;
+              FastLED.show();
+              if ( read_flag || write_flag || lock_flag){
+                Serial.println("#TAGDATA");
+                Serial.write(tag_data.stored_pc,2);
+                Serial.write(tag_data.epc,12);
+                Serial.write(tag_data.crc16,2);
+              }
+              //debug(String(write_flag));
+              if (read_flag)
+              {
+                reader_state = R_READ;
+                counter = 0;
+              }
+              else if(write_flag)
+              {
+                reader_state = R_WRITE;
+                counter = 0;
+              }
+              else if(lock_flag)
+              {
+                reader_state = R_LOCK;
+                counter = 0;
+              }
+              else
+              {
+                reader_state = R_POWERDOWN;
+                counter = repetitions;
+              }
+            }
+            else
+            {
+              counter++;
+              leds[0] = CRGB::Orange;
+              leds[1] = CRGB::Orange;
+              FastLED.show();
+              LED_BLUE_OFF;
+              LED_RED_OFF;
+            }
           }
         }
-        else
+        else 
         {
-          counter++;
-          leds[0] = CRGB::Magenta;
-          leds[1] = CRGB::Magenta;
-          FastLED.show();
-          LED_BLUE_OFF;
-          LED_RED_OFF;
+            counter++;
+            leds[0] = CRGB::Magenta;
+            leds[1] = CRGB::Magenta;
+            FastLED.show();
+            LED_BLUE_OFF;
+            LED_RED_OFF; 
         }
       }
       else
@@ -371,6 +383,12 @@ void loop()
         FastLED.show();
         LED_BLUE_OFF;
         LED_RED_OFF;
+      }
+      if (counter >= repetitions && epc_found){
+        Serial.println("#TAGDATA");
+        Serial.write(tag_data.stored_pc,2);
+        Serial.write(tag_data.epc,12);
+        Serial.write(tag_data.crc16,2);
       }
       break;
 
@@ -557,17 +575,23 @@ void loop()
         cmd_string = Serial.readStringUntil('#');
         tx_power = (byte) cmd_string.toInt();
       }
+      // Reading data from memory blocks
       else if (cmd_string.equals("READ"))
       {
         Serial.println("#READ#");
         read_flag = true;
+        write_flag = false;
+        lock_flag = false;
+        block_flag = false;
         cmd_string = Serial.readStringUntil('#');
         memoryblock = (byte) cmd_string.toInt();
         cmd_string = Serial.readStringUntil('#');
         blockaddr = (byte) cmd_string.toInt();
         cmd_string = Serial.readStringUntil('#');
         nWords = (byte) cmd_string.toInt();
+        debug("[!] READ");
       }
+      // Writing data to tag
       else if (cmd_string.equals("WRITE"))
       {
         Serial.println("#WRITE#");
@@ -589,6 +613,16 @@ void loop()
         //dataword = data[1] << 8 | data[0];
         debug("#WRITE MODE");
       }
+      // Section if only basic EPC read should be performed
+      else if (cmd_string.equals("EPC"))
+      {
+        Serial.println("#READ_EPC");
+        write_flag = false;
+        read_flag = false;
+        block_flag = false;
+        debug("#READ_EPC");
+      }
+     
       /*
       else if (cmd_string.equals("LOCK"))
       {

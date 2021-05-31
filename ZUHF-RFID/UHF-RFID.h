@@ -901,7 +901,7 @@ bool search_write_ack()
   {
     if(RX_GDO0_STATE)
     {
-      TX_UNIT.SendCW(12);
+      TX_UNIT.SendCW(64);
       while(RX_GDO0_STATE);
       RX_UNIT.SpiReadBurstReg(CC1101_RXFIFO, rxbuffer, 10);
       found = true;
