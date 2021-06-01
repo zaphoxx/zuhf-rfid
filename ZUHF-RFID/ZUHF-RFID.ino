@@ -432,9 +432,11 @@ void loop()
             leds[1] = CRGB::Green;
             FastLED.show();
             /* READ OUT DATA WRITTEN TO TAG FOR CONFIRMATION */
-            reader_state = R_READ;
+            //reader_state = R_READ;
             // reset counter prior going to R_READ
-            counter = 0;
+            //counter = 0;
+            reader_state = R_POWERDOWN;
+            counter = repetitions;
           }
           else
           {
@@ -622,8 +624,6 @@ void loop()
         block_flag = false;
         debug("#READ_EPC");
       }
-     
-      /*
       else if (cmd_string.equals("LOCK"))
       {
         Serial.println("#LOCK#");
@@ -632,8 +632,9 @@ void loop()
         for (int i = 0; i < 20; i++){
           mask_bits[i] = (byte) ser.read(1).toInt();
         }
+        debug(mask_bits,20);
       }
-      */
+      
       else
       { 
         reader_state = R_WAIT;

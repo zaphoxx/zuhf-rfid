@@ -41,6 +41,9 @@ def main():
     elif (args.read_flag):
       ser.write(F'READ#'.encode('latin-1'))
       ser.write(F"{args.mem_block}#{args.block_addr}#{args.n_words}#".encode('latin-1'))
+    elif (args.lock_flag):
+      ser.write(F'LOCK#'.encode('latin-1'))
+      ser.write(F"{args.lock_mask}{args.lock_action}#".encode('latin-1'))
     else:
       ser.write(F'EPC#'.encode('latin-1'))
     
@@ -91,28 +94,37 @@ def process_args(parser):
     parser.add_argument('-tp', dest='tx_power', choices=[0x11,0x12,0x13,0x14,0x15,0x16],type=int,help='tx_power - index', default=0x16)
     parser.add_argument('-t', dest='timeout', help='serial read timeout', type=int, default=3)
     parser.add_argument('-r', dest='repetitions', help='repetitions to run before terminating',type=int, default=1000)
-    #parser.add_argument('-read', dest = 'read_flag', action='store_true')
+    
+    # arguments used in combination with actions read/write (-data is only relevant for the write action)
     parser.add_argument('-block', dest = 'block_addr', help='blockaddress to read/write from', type=int ,default=0)
     parser.add_argument('-mem', dest = 'mem_block', help='memory block to read / write from e.g. user block',choices=[0,1,2,3], type=int, default = 3)
     parser.add_argument('-n',dest = 'n_words', help='read n words from mem block, max is 32 words',type=int, default = 1)
     parser.add_argument('-data', dest = 'data', help='word data to write to mem block', default="1337")
-    parser.add_argument('-write', dest = 'write_flag', action='store_true')
-    parser.add_argument('-lock', dest = 'lock_flag', action='store_true')
-    parser.add_argument('-read', dest = 'read_flag', action='store_true')
+    
+    # arguments for -lock action
+    parser.add_argument('-mask', dest = 'lock_mask', default='0000000000')
+    parser.add_argument('-action', dest = 'lock_action', default = '0000000000')
+    
+    # access / authentication actions    
+    parser.add_argument('-access', dest = 'access_pwd', default='00000000')    
+
+    # available actions: write,read,lock (mutually exclusive)   
+    action = parser.add_mutually_exclusive_group()
+    action.add_argument('-write', dest = 'write_flag', action='store_true')
+    action.add_argument('-lock', dest = 'lock_flag', action='store_true')
+    action.add_argument('-read', dest = 'read_flag', action='store_true')
+    
     #parser.print_help()
     args = parser.parse_args()
+    
     if args.write_flag:
-      response = input("[WARNING]You are about to potentially overwrite data!!!\n<continue y/n ?>")
-      if response != 'y':
-        sys.exit(0)
       if args.data == None:
         print("[ERROR] You need to provide a data word e.g. \"-data \'CAFE\'\" for writing")
         sys.exit(0)
-    if args.n_words > 8:
-      print("[WARNING] -n values larger then 8 might cause unreliable read/writes! It is recommended to use a maximum of 8 words for read/write")
-      resp = input("<continue y/n?>")
-      if resp != "y":
-        sys.exit(1)
+      # safety check ; truncate data to align with word length and set n appropriately
+      args.data = args.data[:len(args.data)-len(args.data)%4]
+      args.n_words = len(args.data)//4
+      print(args.data, args.n_words)
     return args
 
 def show_settings(args):
