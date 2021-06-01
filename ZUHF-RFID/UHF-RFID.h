@@ -440,7 +440,10 @@ void send_lock(byte *lock_mask, byte *lock_action, byte *handle_bits)
   byte buffer[512];
   byte txbuffer[512];
   int buffersize = 0;
+
+  debug("[F] send_lock");
   
+  //debug(lock_action,10);
   // byte lock_mask[] = {0,0,0,0,0,0,1,1,0,0};
   // byte lock_action[] = {0,0,0,0,0,0,0,0,0,0};
   
@@ -690,6 +693,7 @@ bool read_RN16(byte *rn16)
   RX_UNIT.SpiWriteReg(CC1101_PKTLEN, RN16_LEN);
   RX_UNIT.SpiStrobe(CC1101_SRX);
   TX_UNIT.SendCW(16);
+  
   while(TX_GDO0_STATE){
     if(RX_GDO0_STATE){
       while(RX_GDO0_STATE);
@@ -725,10 +729,12 @@ bool read_Handle(byte *rn_bits){
   byte rxbuffer[64];
   RX_UNIT.SpiWriteReg(CC1101_PKTLEN, 8);
   RX_UNIT.SpiStrobe(CC1101_SRX);
+  
   TX_UNIT.SendCW(16);
+  
   while(TX_GDO0_STATE){
     if(RX_GDO0_STATE){
-      TX_UNIT.SendCW(10);
+      TX_UNIT.SendCW(16);
       while(RX_GDO0_STATE);
       RX_UNIT.SpiReadBurstReg(CC1101_RXFIFO, rxbuffer, 8);
       found = true;
@@ -963,5 +969,5 @@ void debug(byte *data, int data_size)
     Serial.print(data[i], HEX);
     Serial.print(" ");
   }
-  Serial.println("#");
+  Serial.println("\n#");
 }

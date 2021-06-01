@@ -11,6 +11,7 @@ import os
 
 def main():
     logo()
+    test = False
     args = process_args(argparse.ArgumentParser())
     show_settings(args)
     #request, targetfilename = init(args)
@@ -30,9 +31,8 @@ def main():
     ser.write(F'REP#{args.repetitions}#'.encode('latin-1'))
     ser.write(F'TXP#{args.tx_power}#'.encode('latin-1'))
     
-    if (args.lock_flag):
-      ser.write(F'LOCK#'.encode('latin-1'))
-      # send data bits
+    if (test):
+      print("[TEST]")
     elif (args.write_flag):
       ser.write(F'WRITE#'.encode('latin-1'))
       ser.write(F"{args.mem_block}#{args.block_addr}#{args.n_words}#".encode('latin-1'))
@@ -43,9 +43,15 @@ def main():
       ser.write(F"{args.mem_block}#{args.block_addr}#{args.n_words}#".encode('latin-1'))
     elif (args.lock_flag):
       ser.write(F'LOCK#'.encode('latin-1'))
-      ser.write(F"{args.lock_mask}{args.lock_action}#".encode('latin-1'))
+      mask_bytes = bytes([int(x) for x in args.lock_mask])
+      action_bytes = bytes([int(x) for x in args.lock_action])
+      ser.write(mask_bytes)  
+      ser.write(action_bytes)
+      ser.write(b"#")
+              
+      
     else:
-      ser.write(F'EPC#'.encode('latin-1'))
+      ser.write(F'READ_EPC#'.encode('latin-1'))
     
     # RUN SCAN #
     ser.write(b'DUMMY#') # terminate
@@ -67,16 +73,18 @@ def main():
         buffer = ser.read(16)
         print("#"*62)
         print(F"Stored PC: {' '.join(format(x,'#02x') for x in buffer[:2])}")
-        print(F"EPC: {' '.join(format(x,'#02x') for x in buffer[2:14])}")
+        epc = ''.join('{0:0{1}X}'.format(x,2) for x in buffer[2:14])
+        print(F"EPC:{epc}")
         print(F"CRC16: {' '.join(format(x,'#02x') for x in buffer[14:])}")
         print("#"*62)
       elif (line == b"WRITE#OK#"):
-        print(F"# WRITE # {args.data} written to MEMBLOCK {args.mem_block} ADDR {args.block_addr} #") 
+        print(F"[+] WRITE COMPLETE") 
       elif (line == b"#DEBUG"):
         line = ser.readline().rstrip()
         print(line);
       else:
-        print(line.decode('latin-1').ljust(80,' '),end='\r',flush=True)
+        pass
+        #print(line.decode('latin-1').ljust(80,' '),end='\r',flush=True)
     
     if ser.isOpen():
       ser.close()

@@ -1,7 +1,7 @@
 /*  ZUHF-RFID - Arduino Sketch to run a self build UHF RFID Reader (Read/Write)
 	Version: v1c - supporting CLI accessibility via zuhf-cli.py    
 	Author:       Manfred Heinz
-    Last Update:  06.05.2021
+    Last Update:  01.06.2021
     Copyright (C) 2021  Manfred Heinz
 
     This program is free software: you can redistribute it and/or modify
@@ -158,7 +158,7 @@ byte blockaddr = 0;
 byte nWords = 1;
 word dataword = 0;
 byte data[512];
-byte mask_bits[20];
+byte mask_bits[10], action_bits[10];
 
 
 void(* resetFunc) (void) = 0;
@@ -281,6 +281,12 @@ void loop()
       
       for (int i = 0; i < 16; i++) RN16_Bits[i] = 0;
       for (int i = 0; i < 16; i++) HANDLE_Bits[i] = 0;
+      /*
+      for (int i = 0; i < 10; i++){
+          mask_bits[i] = 0x00;
+          action_bits[i] = 0x00;
+      }
+      */
       LED_GREEN_ON;
       /* ********** START TX AND SEND CW FOR TAG SETTLE ********** */
       TX_UNIT.SpiStrobe(CC1101_SFTX);
@@ -314,12 +320,12 @@ void loop()
           // If only reading epc then set counter to max
           // and break out
           if ( !read_flag && !write_flag && !lock_flag ){
+            debug("[+] EPC Found!");
             counter = repetitions;
           }
           else
           {
             send_req_rn(RN16_Bits);
-          
             if (read_Handle(HANDLE_Bits))
             {
               TX_UNIT.SendCW(50);
@@ -346,7 +352,7 @@ void loop()
               else if(lock_flag)
               {
                 reader_state = R_LOCK;
-                counter = 0;
+                //counter = 0;
               }
               else
               {
@@ -462,7 +468,7 @@ void loop()
       }
       for (int i = 0; i < sizeof(data); i++) data[i]=0;
       /* **** READ DATA FROM TAG ***** */
-      debug("read nWords: ");debug(String(nWords));
+      debug("[+] Read n words: ");debug(String(nWords));
       send_read(memoryblock,blockaddr,nWords,HANDLE_Bits);      
       if (read_data(data, nWords)) //add 4 bytes for crc16 and handle + 1 byte because of the 0 header
       {
@@ -480,7 +486,28 @@ void loop()
 
     case R_LOCK:
       /* ******** LOCK CMD ******** */
-      //send_lock(mask_bits, HANDLE_Bits);
+      if (counter < repetitions)
+      {
+        reader_state = R_LOCK;
+      }
+      else
+      {
+        reader_state = R_POWERDOWN;
+      }
+      send_lock(mask_bits, action_bits, HANDLE_Bits);
+      debug("[+] R_LOCK");
+      if (search_write_ack())
+      {
+        leds[0] = CRGB::Blue;
+        leds[1] = CRGB::Green;
+        FastLED.show();
+        reader_state = R_POWERDOWN;
+        counter = repetitions;
+      }
+      else
+      {
+        counter++;
+      }
       break;
 
 
@@ -560,10 +587,11 @@ void loop()
       digitalWrite(LED_RED, HIGH);
       //runMenu();
       cmd_string = Serial.readStringUntil('#');
-      debug(cmd_string);
+      //debug(cmd_string);
       if (cmd_string.equals("RUN"))
       {
         Serial.println(cmd_string);
+        debug(cmd_string);
         reader_state = R_INIT;
         //delay(500);
       }
@@ -591,7 +619,7 @@ void loop()
         blockaddr = (byte) cmd_string.toInt();
         cmd_string = Serial.readStringUntil('#');
         nWords = (byte) cmd_string.toInt();
-        debug("[!] READ");
+        debug("[+] Read Mode");
       }
       // Writing data to tag
       else if (cmd_string.equals("WRITE"))
@@ -599,7 +627,7 @@ void loop()
         Serial.println("#WRITE#");
         write_flag = true;
         block_flag = false;
-        debug("#WRITE1");
+        debug("[+] Write Mode");
         
         cmd_string = Serial.readStringUntil('#');
         Serial.println(cmd_string);
@@ -613,7 +641,7 @@ void loop()
         for (int i = 0; i < sizeof(data); i++) data[i] = 0;
         Serial.readBytes(data,nWords * 2);
         //dataword = data[1] << 8 | data[0];
-        debug("#WRITE MODE");
+        //debug("#WRITE MODE");
       }
       // Section if only basic EPC read should be performed
       else if (cmd_string.equals("EPC"))
@@ -622,17 +650,24 @@ void loop()
         write_flag = false;
         read_flag = false;
         block_flag = false;
-        debug("#READ_EPC");
+        debug("[+] Read EPC");
       }
       else if (cmd_string.equals("LOCK"))
       {
         Serial.println("#LOCK#");
+        debug(cmd_string);
+        write_flag = false;
+        read_flag = false;
         lock_flag = true;
-        // Read in the 20 mask/access bits
-        for (int i = 0; i < 20; i++){
-          mask_bits[i] = (byte) ser.read(1).toInt();
-        }
-        debug(mask_bits,20);
+        
+        // Read in the 20 mask/action bits
+        Serial.readBytes(mask_bits,10);
+        Serial.readBytes(action_bits,10);
+        
+        
+        debug("[+] Lock Mode");
+        debug(mask_bits,10);
+        debug(action_bits,10);
       }
       
       else

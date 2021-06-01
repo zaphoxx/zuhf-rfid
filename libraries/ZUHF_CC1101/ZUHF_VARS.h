@@ -124,7 +124,7 @@ const byte WRITE_CMD[] = {1,1,0,0,0,0,1,1};
 const byte BLOCKWRITE_CMD[] = {1,1,0,0,0,1,1,1};
 
 /*
- * LOCK
+ * LOCK 11000101
  */
 const byte LOCK_CMD[] = {1,1,0,0,0,1,0,1};
 
