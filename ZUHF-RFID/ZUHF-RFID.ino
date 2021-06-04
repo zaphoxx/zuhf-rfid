@@ -1,6 +1,6 @@
 /*  ZUHF-RFID - Arduino Sketch to run a self build UHF RFID Reader (Read/Write)
-	Version: v1c - supporting CLI accessibility via zuhf-cli.py    
-	Author:       Manfred Heinz
+  Version: v1c - supporting CLI accessibility via zuhf-cli.py    
+  Author:       Manfred Heinz
     Last Update:  01.06.2021
     Copyright (C) 2021  Manfred Heinz
 
@@ -50,7 +50,7 @@ CRGB leds[NUM_LEDS];
 //#define RN16_LEN 4 // FM0 encoded RN16 length is here 4Bytes 
 
 /* ************* MAIN DEFAULT CONTROL SETTINGS ************* */
-#define TX_POWER    0x16 // 0x11 --> 0x11/0x80 (5.2 dBm) 0x12/0x27 (-9.8 dBm) 0x13/0x67 (-5.0 dBm) 0x14/0x50 (-0.3 dBm) 0x16/0xc0 (9.8 dBm) byte PaTable[8] = {0x00,0x80,0x27,0x67,0x50,0x80,0xc0,0x00}; //
+#define TX_POWER    0x16 // 0x11 --> 0x11/0x80 (5.2 dBm) 0x12/0x27 (-9.8 dBm) 0x13/0x67 (-5.0 dBm) 0x14/0x50 (-0.3 dBm) 0x16/0xc0 (10.7 dBm) byte PaTable[8] = {0x00,0x80,0x27,0x67,0x50,0x80,0xc0,0x00}; //
 #define REPETITIONS 100
 #define AGC2        0x03
 #define AGC0        0x90
@@ -149,7 +149,7 @@ byte cmd_bytes[256];
 byte serial_data;
 String cmd_string;
 //M_STATES current_Menu;
-boolean write_flag=false, read_flag=false, block_flag=false, lock_flag=false, epc_found=false;
+boolean write_flag=false, read_flag=false, block_flag=false, lock_flag=false, epc_found=false, monza_flag=true, access_flag;
 EPC_DATA tag_data;
 
 /* MEMBLOCK READ/WRITE VARS */
@@ -159,6 +159,8 @@ byte nWords = 1;
 word dataword = 0;
 byte data[512];
 byte mask_bits[10], action_bits[10];
+uint16_t lpass,hpass;
+byte wordcount=0;
 
 
 void(* resetFunc) (void) = 0;
@@ -190,6 +192,9 @@ void setup()
   write_flag = false;
   block_flag = false;
   lock_flag = false;
+  access_flag = false;
+  lpass = 0;
+  hpass = 0;
   for (int i = 0; i < sizeof(data); i++) data[i] = 0;
 }
 
@@ -281,23 +286,27 @@ void loop()
       
       for (int i = 0; i < 16; i++) RN16_Bits[i] = 0;
       for (int i = 0; i < 16; i++) HANDLE_Bits[i] = 0;
-      /*
-      for (int i = 0; i < 10; i++){
-          mask_bits[i] = 0x00;
-          action_bits[i] = 0x00;
-      }
-      */
+      wordcount = 0;
       LED_GREEN_ON;
       /* ********** START TX AND SEND CW FOR TAG SETTLE ********** */
       TX_UNIT.SpiStrobe(CC1101_SFTX);
       RX_UNIT.SpiStrobe(CC1101_SFRX);
-      delay(2);
+      delay(5);
       TX_UNIT.SpiStrobe(CC1101_STX);
       TX_UNIT.SpiWriteBurstReg(CC1101_TXFIFO, CWA, 20);
       /* ********** *********************************** ********** */
-      reader_state = R_QUERY;
+      {
+        reader_state = R_QUERY;
+      }
       break;
 
+    /* QUERY REQUEST
+     * R_QUERY: 
+     * 1) send QUERY request and read tag response (RN16)
+     * 2) send ACK and read tags EPC response / if only EPC reading then this is the last step otherwise see 3)
+     * 3) send REQ_RN and transition tag into OPEN/SECURED state (depending on access passwd setting)
+     * 4) delegate to next command (READ, WRITE, LOCK, ACCESS etc.)
+     */
     case R_QUERY:
       if (counter < repetitions)
       {
@@ -307,52 +316,59 @@ void loop()
       {
         reader_state = R_POWERDOWN;
       }
-      
+      // 1) SEND QUERY REQUEST
       send_default_query();
+      //    READ TAG RESPONSE / RN16
       if (read_RN16(RN16_Bits))
       {
         LED_BLUE_ON;
+        // 2) SEND ACK
         send_ack(RN16_Bits);
+        //    READ TAG RESPONSE / EPC DATA
         if (read_epc(&tag_data))
         {
-          LED_RED_ON;
+          debug("[ACKNOWLEDGED]");
           epc_found = true;
-          // If only reading epc then set counter to max
-          // and break out
+          LED_RED_ON;
+          //debug("[+] EPC Found!");
+            
           if ( !read_flag && !write_flag && !lock_flag ){
-            debug("[+] EPC Found!");
             counter = repetitions;
           }
           else
           {
+            // 3) SEND REQ_RN
             send_req_rn(RN16_Bits);
+            //    READ HANDLE
             if (read_Handle(HANDLE_Bits))
             {
-              TX_UNIT.SendCW(50);
-              leds[0] = CRGB::Blue;
-              leds[1] = CRGB::Green;
-              FastLED.show();
-              if ( read_flag || write_flag || lock_flag){
-                Serial.println("#TAGDATA");
-                Serial.write(tag_data.stored_pc,2);
-                Serial.write(tag_data.epc,12);
-                Serial.write(tag_data.crc16,2);
+              // TAG SHOULD NOW BE either in OPEN or SECURED STATE
+              debug("[OPEN/SECURED]");
+              /* add some CW to ensure tag stays powered up */
+              TX_UNIT.SendCW(32);
+              
+              // 4) DELEGATE TO NEXT COMMAND
+              if (access_flag)
+              {
+                debug("SWITCH TO ACCESS");
+                reader_state = R_ACCESS;
+                counter = 0;
               }
-              //debug(String(write_flag));
-              if (read_flag)
+              else if (read_flag)
               {
                 reader_state = R_READ;
                 counter = 0;
               }
               else if(write_flag)
               {
+                //debug("[WRITE] *");
                 reader_state = R_WRITE;
                 counter = 0;
               }
               else if(lock_flag)
               {
                 reader_state = R_LOCK;
-                //counter = 0;
+                counter = 0;
               }
               else
               {
@@ -390,31 +406,94 @@ void loop()
         LED_BLUE_OFF;
         LED_RED_OFF;
       }
-      if (counter >= repetitions && epc_found){
-        Serial.println("#TAGDATA");
-        Serial.write(tag_data.stored_pc,2);
-        Serial.write(tag_data.epc,12);
-        Serial.write(tag_data.crc16,2);
-      }
+      
       break;
 
     case R_ACCESS:
-      if (counter < repetitions){
-        reader_state = R_ACCESS;
-      }else{
+      /* access sequence
+       * 1) send req_rn / recv new RN16
+       * 2) send access_cmd with [password (lower word) xor RN16] / check crc16 of response
+       * 3) send req_rn / recv new RN16
+       * 4) send access_cmd with upper word / check crc16 response
+       * 5) if all good tag goes into secured state / if not goes back to arbitrate state (full query sequence needs to be repeated)
+       */
+      if (counter < repetitions)
+      {
+        reader_state = R_QUERY;
+        // in case of errors restart full query sequence
+      }
+      else
+      {
         debug("[ACCESS] FAILED!");
         reader_state = R_POWERDOWN;
       }
+
+      /* initiate first access sequence with req_rn(handle) */
       send_req_rn(HANDLE_Bits);
       if(read_Handle(RN16_Bits))
       {
-        debug("[ACCESS] *");
-        reader_state = R_POWERDOWN;
-      }
-      counter++;
+        //debug("[ACCESS 1] *");
+        send_access(lpass, HANDLE_Bits, RN16_Bits);
+        if (search_access_ack())
+        {
+          debug("[ACCESS 1] OK");
+          /* send second access sequence */
+          send_req_rn(HANDLE_Bits);
+          if(read_Handle(RN16_Bits))
+          {
+            //debug("[ACCESS 2] *");
+            send_access(hpass, HANDLE_Bits, RN16_Bits);
+            if (search_access_ack())
+              debug("[SECURED]");
+              //TX_UNIT.SendCW(32);
+              if (read_flag)
+              {
+                reader_state = R_READ;
+                counter = 0;
+              }
+              else if (write_flag)
+              {
+                reader_state = R_WRITE;
+                counter = 0;
+              }
+              else if (lock_flag)
+              {
+                reader_state = R_LOCK;
+                counter = 0;
+              }
+              else
+              {
+                reader_state = R_POWERDOWN;
+                counter = repetitions;
+              }
+            }
+            else
+            {
+              counter++;
+              LED_BLUE_OFF;
+              LED_RED_OFF;
+              break;
+            }
+          }
+          else
+          {
+            counter++;
+            LED_BLUE_OFF;
+            LED_RED_OFF;
+            break;
+          }
+        }
+        else
+        {
+          counter++;
+          LED_BLUE_OFF;
+          LED_RED_OFF;
+          break;
+        }     
       break;
 
     case R_WRITE:
+      /* ***** WRITE DATA TO TAG ***** */
       if (counter < repetitions)
       {
         reader_state = R_WRITE;
@@ -422,42 +501,40 @@ void loop()
       else
       {
         reader_state = R_POWERDOWN;
+        break;
       }
-      
-      /* ***** WRITE DATA TO TAG ***** */
-      for (int i = 0; i < nWords; i++)
+      debug("[WRITE] *");
+      debug(String(wordcount));
+      debug(String(nWords));
+      debug(String(counter));
+      while ((wordcount < (nWords)) && (counter < repetitions))
       {
+        debug("[REQ_RN] *");
         send_req_rn(HANDLE_Bits);
         if(read_Handle(RN16_Bits))
         {
-          dataword = data[(i*2)+1] << 8 | data[(i*2)];
-          send_write(memoryblock, blockaddr+i, dataword, HANDLE_Bits, RN16_Bits);
+          debug("[REQ_RN(Handle)]");
+          dataword = data[(wordcount*2)+1] << 8 | data[(wordcount*2)];
+          send_write(memoryblock, blockaddr+wordcount, dataword, HANDLE_Bits, RN16_Bits);
           if (search_write_ack())
           {
-            leds[0] = CRGB::Blue;
-            leds[1] = CRGB::Green;
-            FastLED.show();
-            /* READ OUT DATA WRITTEN TO TAG FOR CONFIRMATION */
-            //reader_state = R_READ;
-            // reset counter prior going to R_READ
-            //counter = 0;
-            reader_state = R_POWERDOWN;
-            counter = repetitions;
+            TX_UNIT.SendCW(16);
+            wordcount++;
           }
-          else
-          {
-            counter++;
-          }
+          
         }
-        else
-        {
         counter++;
-        reader_state = R_QUERY; // start again with full query
-        }
+        leds[0] = CRGB::Magenta;
+        leds[1] = CRGB::Magenta;
+        FastLED.show();
+        LED_BLUE_OFF;
+        LED_RED_OFF;
       }
+      counter = repetitions;
       break;
 
     case R_READ:
+      TX_UNIT.SendCW(16);
       if (counter < repetitions)
       {
         reader_state = R_READ;
@@ -468,7 +545,11 @@ void loop()
       }
       for (int i = 0; i < sizeof(data); i++) data[i]=0;
       /* **** READ DATA FROM TAG ***** */
-      debug("[+] Read n words: ");debug(String(nWords));
+      //debug("[READ] *");
+      //debug(String(memoryblock));
+      //debug(String(blockaddr));
+      
+      //debug(String(nWords));
       send_read(memoryblock,blockaddr,nWords,HANDLE_Bits);      
       if (read_data(data, nWords)) //add 4 bytes for crc16 and handle + 1 byte because of the 0 header
       {
@@ -493,20 +574,22 @@ void loop()
       else
       {
         reader_state = R_POWERDOWN;
+        break;
       }
-      send_lock(mask_bits, action_bits, HANDLE_Bits);
-      debug("[+] R_LOCK");
-      if (search_write_ack())
+      while (counter < repetitions)
       {
-        leds[0] = CRGB::Blue;
-        leds[1] = CRGB::Green;
-        FastLED.show();
-        reader_state = R_POWERDOWN;
-        counter = repetitions;
-      }
-      else
-      {
+        send_lock(mask_bits, action_bits, HANDLE_Bits);
+        //debug("[+] R_LOCK");
+        if (search_lock_ack())
+        {        
+          counter = repetitions;
+          break;
+        }
         counter++;
+        LED_BLUE_OFF;
+        LED_RED_OFF;
+        TX_UNIT.SendCW(16);
+        break;
       }
       break;
 
@@ -526,13 +609,6 @@ void loop()
           send_req_rn(RN16_Bits);
           if (read_Handle(HANDLE_Bits))
           { 
-            /* ******** LOCK CMD ******** */
-            /*
-            byte lock_mask[] = {0,0,0,0,0,0,1,1,0,0};
-            byte lock_action[] = {0,0,0,0,0,0,0,0,0,0};
-            send_lock(lock_mask, lock_action, HANDLE_Bits);
-            */
-            /* ************************* */
             TX_UNIT.SendCW(50);
             byte memoryblock = 3;
             /* ***** WRITE DATA TO TAG ***** */
@@ -565,6 +641,12 @@ void loop()
 
 
     case R_POWERDOWN:
+      if (epc_found){
+        Serial.println("#TAGDATA");
+        Serial.write(tag_data.stored_pc,2);
+        Serial.write(tag_data.epc,12);
+        Serial.write(tag_data.crc16,2);
+      }
       /* GRACEFULLY TERMINATE TX UNIT */
       /* wait till fifo is empty before going into standby */
       while ((TX_UNIT.SpiReadStatus(CC1101_TXBYTES) & 0x7f) > 0);
@@ -590,8 +672,7 @@ void loop()
       //debug(cmd_string);
       if (cmd_string.equals("RUN"))
       {
-        Serial.println(cmd_string);
-        debug(cmd_string);
+        debug("Running ...");
         reader_state = R_INIT;
         //delay(500);
       }
@@ -608,11 +689,12 @@ void loop()
       // Reading data from memory blocks
       else if (cmd_string.equals("READ"))
       {
-        Serial.println("#READ#");
+        //Serial.println("#READ#");
         read_flag = true;
         write_flag = false;
         lock_flag = false;
         block_flag = false;
+        access_flag = false;
         cmd_string = Serial.readStringUntil('#');
         memoryblock = (byte) cmd_string.toInt();
         cmd_string = Serial.readStringUntil('#');
@@ -624,25 +706,85 @@ void loop()
       // Writing data to tag
       else if (cmd_string.equals("WRITE"))
       {
-        Serial.println("#WRITE#");
         write_flag = true;
         block_flag = false;
-        debug("[+] Write Mode");
+        monza_flag =false;
+        lock_flag = false;
+        access_flag = false;
         
         cmd_string = Serial.readStringUntil('#');
-        Serial.println(cmd_string);
+        //Serial.println(cmd_string);
         memoryblock = (byte) cmd_string.toInt();
         cmd_string = Serial.readStringUntil('#');
-        Serial.println(cmd_string);
+        //Serial.println(cmd_string);
         blockaddr = (byte) cmd_string.toInt();
         cmd_string = Serial.readStringUntil('#');
-        Serial.println(cmd_string);
+        //Serial.println(cmd_string);
         nWords = (byte) cmd_string.toInt();
         for (int i = 0; i < sizeof(data); i++) data[i] = 0;
         Serial.readBytes(data,nWords * 2);
         //dataword = data[1] << 8 | data[0];
-        //debug("#WRITE MODE");
+        debug("[+] WRITE MODE");
       }
+      /* Section for processing of access sequence */
+      else if (cmd_string.equals("READACCESS"))
+      {
+        access_flag = true;
+        read_flag = true;
+        write_flag = false;
+        lock_flag = false;
+        /* Read in passwd as lower and upper word */
+        byte tmp[2];
+        Serial.readBytes(tmp,2);
+        debug(tmp,2);
+        lpass = (tmp[1] << 8) | tmp[0];
+        cmd_string = Serial.readStringUntil('#');
+        Serial.readBytes(tmp,2);
+        debug(tmp,2);
+        hpass = (tmp[1] << 8) | tmp[0];
+        cmd_string = Serial.readStringUntil('#');
+
+        /* read in standart parameters */
+        cmd_string = Serial.readStringUntil('#');
+        memoryblock = (byte) cmd_string.toInt();
+        cmd_string = Serial.readStringUntil('#');
+        //Serial.println(cmd_string);
+        blockaddr = (byte) cmd_string.toInt();
+        //debug(String(blockaddr));
+        cmd_string = Serial.readStringUntil('#');
+        //Serial.println(cmd_string);
+        nWords = (byte) cmd_string.toInt();
+        //debug(String(nWords));
+        debug("[READACCESS]");
+      }
+      else if (cmd_string.equals("WRITEACCESS"))
+      {
+        access_flag = true;
+        read_flag = false;
+        write_flag = true;
+        lock_flag = false;
+        byte tmp[2];
+        Serial.readBytes(tmp,2);
+        debug(tmp,2);
+        lpass = (tmp[1] << 8) | tmp[0];
+        cmd_string = Serial.readStringUntil('#');
+        Serial.readBytes(tmp,2);
+        debug(tmp,2);
+        hpass = (tmp[1] << 8) | tmp[0];
+        cmd_string = Serial.readStringUntil('#');
+        
+        cmd_string = Serial.readStringUntil('#');
+        memoryblock = (byte) cmd_string.toInt();
+        cmd_string = Serial.readStringUntil('#');
+        //Serial.println(cmd_string);
+        blockaddr = (byte) cmd_string.toInt();
+        cmd_string = Serial.readStringUntil('#');
+        //Serial.println(cmd_string);
+        nWords = (byte) cmd_string.toInt();
+        for (int i = 0; i < sizeof(data); i++) data[i] = 0;
+        Serial.readBytes(data,nWords * 2);
+      }
+      
       // Section if only basic EPC read should be performed
       else if (cmd_string.equals("EPC"))
       {
@@ -650,29 +792,50 @@ void loop()
         write_flag = false;
         read_flag = false;
         block_flag = false;
+        access_flag = false;
         debug("[+] Read EPC");
       }
       else if (cmd_string.equals("LOCK"))
       {
-        Serial.println("#LOCK#");
-        debug(cmd_string);
         write_flag = false;
         read_flag = false;
         lock_flag = true;
+        access_flag = false;
+        
         
         // Read in the 20 mask/action bits
         Serial.readBytes(mask_bits,10);
         Serial.readBytes(action_bits,10);
         
-        
-        debug("[+] Lock Mode");
-        debug(mask_bits,10);
-        debug(action_bits,10);
+        debug("[+] LOCK MODE");
       }
-      
+      else if (cmd_string.equals("LOCKACCESS"))
+      {
+        access_flag = true;
+        write_flag = false;
+        read_flag = false;
+        lock_flag = true;
+
+        byte tmp[2];
+        Serial.readBytes(tmp,2);
+        debug(tmp,2);
+        lpass = (tmp[1] << 8) | tmp[0];
+        cmd_string = Serial.readStringUntil('#');
+        Serial.readBytes(tmp,2);
+        debug(tmp,2);
+        hpass = (tmp[1] << 8) | tmp[0];
+        cmd_string = Serial.readStringUntil('#');
+        
+        // Read in the 20 mask/action bits
+        Serial.readBytes(mask_bits,10);
+        Serial.readBytes(action_bits,10);
+        
+        debug("[LOCKACCESS]");
+      }
       else
       { 
         reader_state = R_WAIT;
+        //flushSerial();
         delay(100);
       }
       cmd_string = "";
@@ -691,4 +854,12 @@ void logo()
   Serial.write(" @@@@@@@@ @@@  @@@ @@@  @@@ @@@@@@@@      @@@@@@@  @@@@@@@@ @@@ @@@@@@@\n      @@! @@!  @@@ @@!  @@@ @@!           @@!  @@@ @@!      @@! @@!  @@@\n    @!!   @!@  !@! @!@!@!@! @!!!:!        @!@!!@!  @!!!:!   !!@ @!@  !@!\n  !!:     !!:  !!! !!:  !!! !!:           !!: :!!  !!:      !!: !!:  !!!\n :.::.: :  :.:: :   :   : :  :             :   : :  :       :   :: :  : \n");
   Serial.println();
   Serial.println();
+}
+
+void flushSerial()
+{
+  while (Serial.available())
+  {
+    byte dummy = Serial.read();
+  }
 }

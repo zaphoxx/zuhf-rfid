@@ -129,6 +129,11 @@ const byte BLOCKWRITE_CMD[] = {1,1,0,0,0,1,1,1};
 const byte LOCK_CMD[] = {1,1,0,0,0,1,0,1};
 
 /*
+ * ACCESS 11000110
+ */
+const byte ACCESS_CMD[] = {1,1,0,0,0,1,1,0};
+
+/*
 * QUERYREP: framesync + 4 x data0
 */
 const byte QUERYREP[] = {0,1,0,1,1,1,1,1,0,1,0,1,0,1,0,1,0};
@@ -139,5 +144,29 @@ const byte QUERYREP[] = {0,1,0,1,1,1,1,1,0,1,0,1,0,1,0,1,0};
 const byte PREAMBLE[] = {0,1,0,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0};
 
 READER_STATES reader_state = R_START;
+
+/*
+ * ERROR CODES
+*/
+
+const String ERRORCODE[] = {
+            "Other error Catch - all for errors not covered by other codes.",
+            "Not supported - The Tag does not support the specified parameters or feature.",
+            "Insufficient privileges - The Interrogator did not authenticate itself with sufficient privileges for the Tag to perform the operation.",
+            "Memory overrun - The Tag memory location does not exist, is too small, or the Tag does not support the specified EPC length.",
+            "Memory locked - The Tag memory location is locked or permalocked and is either not writeable1 or not readable.",
+            "Crypto suite error - Catch-all for errors specified by the cryptographic suite.",
+            "Command not encapsulated - The Interrogator did not encapsulate the command in an AuthComm or SecureComm as required.",
+            "ResponseBuffer overflow - The operation failed because the ResponseBuffer overflowed.",
+            "Security timeout - The command failed because the Tag is in a security timeout.",
+            "NA",
+            "NA",
+            "Insufficient power - The Tag has insufficient power to perform the operation.",
+            "NA",
+            "NA",
+            "NA",
+            "NA",
+            "Non-specific error - The Tag does not support error-specific codes"
+};
 
 #endif

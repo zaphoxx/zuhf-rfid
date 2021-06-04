@@ -39,12 +39,14 @@ void send_write(byte membank, uint32_t address, uint16_t data, byte *handle_bits
 void send_read(byte membank, uint32_t address, byte nwords, byte *handle_bits);
 void send_req_rn(byte *rn_bits);
 void send_lock(byte *lock_mask, byte *lock_action, byte *handle_bits);
+void send_access(uint16_t passwd, byte *handle_bits, byte *rn16_bits);
 
 /* FUNCTIONS FOR READING TAG RESPONSES */
 bool read_epc(EPC_DATA *tag_epc);
 bool read_RN16(byte *rn16);
 bool read_data(byte *data, byte nwords);
 bool search_write_ack();
+bool search_lock_ack();
 
 /* FUNCTIONS FOR PROCESSING DATA */
 int encode_data(byte *encoded, const byte *data, byte data_size);
@@ -60,6 +62,10 @@ void data_to_bitarray(byte *bitarray, byte *data, byte numbytes);
 /* DEBUG FUNCTIONS */
 void debug(String message);
 void debug(byte *data, int data_size);
+void debug(String message, byte *data, int data_size);
+void error(String message);
+void error(byte *data, int data_size);
+void error(String message, byte *data, int data_size);
 /* ******************************************************************************** */
 
 
@@ -258,6 +264,59 @@ void send_write(byte membank, uint32_t address, uint16_t data, byte *handle_bits
 
 
 /********************************************************************************************************************************
+* FUNCTION NAME: send_access()
+* FUNCTION     : send access command to tag
+* INPUT        : password (either lower or upper word)
+* OUTPUT       : none
+**********************************************************************************************************************************/
+void send_access(uint16_t passwd, byte *handle_bits, byte *rn16_bits)
+{ 
+  
+  /* ******************************* */
+  /* ***** XOR passwd and rn16  ***** */
+  /* ******************************* */
+  byte rn16[2];
+  byte xored[2];
+  generate_bytes(rn16, rn16_bits, 16);
+  xored[1] = rn16[1]^(byte)(passwd >> 8);
+  xored[0] = rn16[0]^(byte)(passwd & 0x00ff);
+  byte xored_bits[16];
+  data_to_bitarray(xored_bits,xored,sizeof(xored));
+  /* ******************************* */
+   
+  byte access_bits[512];
+  byte encoded_cmd[512];
+  int nBytesToSend = 0;
+  byte buffer[512];
+  byte txbuffer[512];
+  int buffersize = 0;
+  memcpy(buffer, FRAMESYNC, sizeof(FRAMESYNC));
+  buffersize += sizeof(FRAMESYNC);
+  
+  byte offset = 0;
+  memcpy(access_bits, ACCESS_CMD, sizeof(ACCESS_CMD));
+  offset += sizeof(ACCESS_CMD);
+  memcpy(access_bits + offset, xored_bits, sizeof(xored_bits));
+  offset += sizeof(xored_bits);
+  memcpy(access_bits + offset, handle_bits, 16);
+  offset += 16;
+  
+  byte crc16_bits[16];
+  crc16B(crc16_bits, access_bits, offset);
+ 
+  memcpy(access_bits + offset, crc16_bits, sizeof(crc16_bits));
+  offset += sizeof(crc16_bits);
+  
+  byte encoded_size = encode_data(encoded_cmd, access_bits, offset);
+
+  memcpy(buffer + buffersize, encoded_cmd, encoded_size);
+  buffersize += encoded_size;
+  nBytesToSend = generate_bytes(txbuffer, buffer, buffersize);
+  TX_UNIT.UpdateFifo(txbuffer,nBytesToSend);
+}
+
+
+/********************************************************************************************************************************
 * FUNCTION NAME: send_blockwrite()
 * FUNCTION     : send write command to tag
 * INPUT        : membank: memorybank to write to (0-3)
@@ -441,11 +500,7 @@ void send_lock(byte *lock_mask, byte *lock_action, byte *handle_bits)
   byte txbuffer[512];
   int buffersize = 0;
 
-  debug("[F] send_lock");
-  
-  //debug(lock_action,10);
-  // byte lock_mask[] = {0,0,0,0,0,0,1,1,0,0};
-  // byte lock_action[] = {0,0,0,0,0,0,0,0,0,0};
+  //debug("[F] send_lock");
   
   memcpy(buffer, FRAMESYNC, sizeof(FRAMESYNC));
   buffersize += sizeof(FRAMESYNC);
@@ -696,6 +751,7 @@ bool read_RN16(byte *rn16)
   
   while(TX_GDO0_STATE){
     if(RX_GDO0_STATE){
+      //TX_UNIT.SendCW(16);
       while(RX_GDO0_STATE);
       RX_UNIT.SpiReadBurstReg(CC1101_RXFIFO, rxbuffer, RN16_LEN);
       decodeFM0(rn16, rxbuffer, RN16_LEN);
@@ -712,7 +768,7 @@ bool read_RN16(byte *rn16)
 
 
 /********************************************************************************************************************************
-* FUNCTION NAME: read_RN16()
+* FUNCTION NAME: read_Handle()
 * FUNCTION     : searches and reads RN16 data from response - should be used after query cmd only (see also read_handle)
 * INPUT        : byte array to be filled with RN16 data
                : (t1: time durations in 100us units; good values are t1 = 16)
@@ -730,11 +786,10 @@ bool read_Handle(byte *rn_bits){
   RX_UNIT.SpiWriteReg(CC1101_PKTLEN, 8);
   RX_UNIT.SpiStrobe(CC1101_SRX);
   
-  TX_UNIT.SendCW(16);
-  
+  TX_UNIT.SendCW(14);
   while(TX_GDO0_STATE){
     if(RX_GDO0_STATE){
-      TX_UNIT.SendCW(16);
+      TX_UNIT.SendCW(5);
       while(RX_GDO0_STATE);
       RX_UNIT.SpiReadBurstReg(CC1101_RXFIFO, rxbuffer, 8);
       found = true;
@@ -767,6 +822,7 @@ bool read_Handle(byte *rn_bits){
 * INPUT        : epc_data structure to be filled in
 * OUTPUT       : returns true if crc16 check is ok; if not it will still fill the
 *                epc_data structure but the crc16 flag will set to false;
+* INFO         : pay special attention to the variables x1,x2 below; 
 **********************************************************************************************************************************/
 bool read_epc(EPC_DATA *tag_epc){
   //Serial.println("[READ EPC] *");
@@ -781,16 +837,25 @@ bool read_epc(EPC_DATA *tag_epc){
   RX_UNIT.SpiStrobe(CC1101_SRX);
 
   /* If the Reader has difficulties finding the epc or performing other actions after reading the epc
-   *  then you might try to tune the value for TX_UNIT.SendCW(xx) a bit. Try to make it as low as
+   *  then you might try to tune the value for TX_UNIT.SendCW(x1/x2) a bit. Try to make it as low as
    *  possible. Values > 14 are typically to long and will violate the max repsonse time reader -> tag.
    *  If the value is to low then the reader might not have enough time to capture the radiosignal.
    */
-  TX_UNIT.SendCW(14); // critical value, change only if really necessary and you know what you are doing!
+
+  // Sweet spot values are currently x1=12, x2=32 (or x1=14, x2=30) for the SendCW(x1/x2) values below
+  byte x1 = 12;
+  byte x2 = 32;
+  TX_UNIT.SendCW(x1); // x1: critical value, change only if really necessary and you know what you are doing!
   while(TX_GDO0_STATE)
   {
     if (RX_GDO0_STATE)
     {
-      TX_UNIT.SendCW(32); // similar to above but not as sensitive as above.
+      // x2: TX_UNIT.SendCW(32)
+      // If tags with another chip (e.g. Monza or Alien Higgs) dont respond to an req_rn then this CW timing of
+      // the read_epc might be too large which causes the tag to fall back into its initial state 
+      // (from acknowledged --> arbitrate); the req_rn command will then be ignored by the tag
+      // In order to stay within the response time restraints you can try to lower the value from below TX_UNIT.SendCW(xx)
+      TX_UNIT.SendCW(x2); // x2: similar to above but not as sensitive as above.
       while(RX_GDO0_STATE);
       RX_UNIT.SpiReadBurstReg(CC1101_RXFIFO, epc_data, PLEN);
       found = true;
@@ -820,7 +885,7 @@ bool read_epc(EPC_DATA *tag_epc){
       /* TODO: temporarily in - needs to be removed in the future */
       //collect_epc_data(epc_bytes);
       /* ---------------------------------------------------------*/
-      Serial.println("[READ EPC] OK");
+      //debug("[READ EPC] OK");
     }else{
       //Serial.println("[READ EPC] ERROR - CRC ERROR");
     }
@@ -872,9 +937,22 @@ bool read_data(byte *data, byte nwords)
   if (packet_received)
   {
     decodeFM0(data_bits, rxbuffer, packetlength);
-    int data_size = generate_bytes(data_bytes, data_bits + 1, nwords * 16);
-    memcpy(data, data_bytes, data_size);
-    //debug(data, data_size);
+    // Check if response contains valid data (header bit = 0)
+    if (data_bits[0] == 0)
+    {
+      int data_size = generate_bytes(data_bytes, data_bits + 1, nwords * 16);
+      memcpy(data, data_bytes, data_size);
+    }
+    else
+    {
+      int data_size = generate_bytes(data_bytes, data_bits + 1, nwords * 16);
+      error("[READ] ERROR. Code: ", &data_bytes[0], 1);
+      error("[READ] " + ERRORCODE[data_bytes[0]]);
+      for (int i = 0; i < (nwords*2); i++)
+      {
+        data[i] = 0xff;
+      }
+    }
   }else{
     //Serial.print("[READ DATA] ERROR");
   }
@@ -899,15 +977,17 @@ bool search_write_ack()
   bool crc_ok = false;
   byte rxbuffer[10]; // ( 16 RN16 + 16 CRC + 1 ) * 2 Bits
   byte databuffer[128];
-  //Serial.println("[SEARCH WRITE ACK] *");
+  //debug("[SEARCH WRITE ACK] *");
+  //RX_UNIT.SpiStrobe(CC1101_SFRX);
   RX_UNIT.SpiWriteReg(CC1101_PKTLEN, 10);
   RX_UNIT.SpiStrobe(CC1101_SRX);
+  TX_UNIT.SendCW(8);
   TX_UNIT.SendCW(64);
   while(TX_GDO0_STATE)
   {
     if(RX_GDO0_STATE)
     {
-      TX_UNIT.SendCW(64);
+      TX_UNIT.SendCW(8);
       while(RX_GDO0_STATE);
       RX_UNIT.SpiReadBurstReg(CC1101_RXFIFO, rxbuffer, 10);
       found = true;
@@ -916,12 +996,13 @@ bool search_write_ack()
   }
   if (found)
   {
-    //Serial.println("[WRITE RESPONSE] *");
+    //debug("[WRITE RESPONSE] *");
     decodeFM0(databuffer, rxbuffer, 10);
   }
-  
+  //debug(databuffer,4);
   if (databuffer[0] == 0)
   {
+    TX_UNIT.SendCW(8);
     uint8_t rcrc16[2];
     generate_bytes(rcrc16, databuffer+17,16);
     byte crc16_bits[16];
@@ -931,8 +1012,128 @@ bool search_write_ack()
       crc_ok = true;
       Serial.println("WRITE#OK#");
     }
+    else
+    {
+      crc_ok = false;
+    }
   }else{
-    //Serial.println("[WRITE RESPONSE] ERROR RESPONSE!");
+    TX_UNIT.SendCW(8);
+    uint8_t errorcode;
+    generate_bytes(&errorcode,databuffer+1,8);
+    error("[WRITE] Error: " + ERRORCODE[errorcode]);
+  }
+  return crc_ok;
+}
+
+/********************************************************************************************************************************
+* FUNCTION NAME: search_lock_ack()
+* FUNCTION     : searches for a positive response after lock_cmd
+* INPUT        : none
+* OUTPUT       : none
+**********************************************************************************************************************************/
+bool search_lock_ack()
+{
+  /*
+   * The Tag successfully executes the command: After executing the command the Tag
+   * shall backscatter the reply shown in Table 6-13 and Figure 6-16, comprising a header (a 0-
+   * bit), the Tag’s handle, and a CRC-16 calculated over the 0-bit and handle. The reply shall
+   * meet the T5 limits in Table 6-16. If the Interrogator observes this reply within T5(max) then
+   * the command completed successfully. 
+   */
+  bool found = false;
+  bool crc_ok = false;
+  byte rxbuffer[10]; 
+  byte databuffer[96];
+  RX_UNIT.SpiWriteReg(CC1101_PKTLEN, 10);
+  RX_UNIT.SpiStrobe(CC1101_SRX);
+  TX_UNIT.SendCW(16);
+  TX_UNIT.SendCW(64);
+  while(TX_GDO0_STATE)
+  {
+    if(RX_GDO0_STATE)
+    {
+      TX_UNIT.SendCW(16);
+      while(RX_GDO0_STATE);
+      RX_UNIT.SpiReadBurstReg(CC1101_RXFIFO, rxbuffer, 10);
+      found = true;
+      break;
+    }
+  }
+  if (found)
+  {
+    //debug(rxbuffer,1);
+    decodeFM0(databuffer, rxbuffer, 10);
+    //debug(databuffer,8);
+    if (databuffer[0] == 0)
+    {
+      uint8_t rcrc16[2];
+      generate_bytes(rcrc16, databuffer+17,16);
+      byte crc16_bits[16];
+      uint16_t ccrc16 = crc16B(crc16_bits, databuffer, 17); // rn16 + header bit;
+      if (rcrc16[0] == (byte)(ccrc16 >> 8) and rcrc16[1] == (byte)(ccrc16 & 0x00ff))
+      {
+        crc_ok = true;
+        debug("[LOCK] Successful");
+      }
+      else{
+        crc_ok = false;
+        debug("[LOCK] FAIL");
+      }
+    }else{
+      TX_UNIT.SendCW(8);
+      uint8_t errorcode;
+      generate_bytes(&errorcode,databuffer+1,8);
+      error("[LOCK] Error: " + ERRORCODE[errorcode]);
+    }
+  }
+  return crc_ok;
+}
+
+
+/********************************************************************************************************************************
+* FUNCTION NAME: search_lock_ack()
+* FUNCTION     : searches for a positive response after lock_cmd
+* INPUT        : none
+* OUTPUT       : none
+**********************************************************************************************************************************/
+bool search_access_ack()
+{
+/* check if crc16 of response is ok */
+  bool found = false;
+  bool crc_ok = false;
+  byte pktlen = 4;
+  byte rxbuffer[8]; 
+  byte databuffer[64];
+  RX_UNIT.SpiWriteReg(CC1101_PKTLEN, 8);
+  RX_UNIT.SpiStrobe(CC1101_SRX);
+  TX_UNIT.SendCW(16);
+  crc_ok = false;
+  while(TX_GDO0_STATE)
+  {
+    if(RX_GDO0_STATE)
+    {
+      TX_UNIT.SendCW(8);
+      while(RX_GDO0_STATE);
+      RX_UNIT.SpiReadBurstReg(CC1101_RXFIFO, rxbuffer, 8);
+      found = true;
+      break;
+    }
+  }
+  if (found)
+  {
+    decodeFM0(databuffer, rxbuffer, 8);
+    uint8_t rcrc16[2];
+    generate_bytes(rcrc16, databuffer+16,16); // save received crc16
+    byte crc16_bits[16];
+    uint16_t ccrc16 = crc16B(crc16_bits, databuffer, 16); // handle_bits
+    if (rcrc16[0] == (byte)(ccrc16 >> 8) and rcrc16[1] == (byte)(ccrc16 & 0x00ff))
+    {
+      crc_ok = true;
+      //debug("[+] Ok");
+    }else{
+      debug("[!ACCESS] crc-check failed!");
+      crc_ok = false;
+    }
   }
   return crc_ok;
 }
@@ -950,7 +1151,7 @@ void collect_epc_data(byte *data)
   tags_read[tags_found].CRC_OK = true;
   tags_found++;
 }
-#endif
+
 
 
 /* debug(msg)/debug(data) - simple functions to send debug messages via serial communication */
@@ -958,8 +1159,7 @@ void debug(String message)
 {
   // Send Identifier '#DEBUG'
   Serial.println("#DEBUG");
-  Serial.print(message);
-  Serial.println("#");
+  Serial.println(message);
 }
 
 void debug(byte *data, int data_size)
@@ -969,5 +1169,44 @@ void debug(byte *data, int data_size)
     Serial.print(data[i], HEX);
     Serial.print(" ");
   }
-  Serial.println("\n#");
+  Serial.println("");
 }
+
+void debug(String message, byte *data, int data_size)
+{
+  Serial.println("#DEBUG");
+  Serial.print(message);
+  for (int i = 0; i < data_size; i++){
+    Serial.print(data[i], HEX);
+    Serial.print(" ");
+  }
+  Serial.println("");
+}
+
+void error(String message)
+{
+  Serial.println("#ERROR");
+  Serial.println(message);
+}
+
+void error(byte *data, int data_size)
+{
+  Serial.println("#ERROR");
+  for (int i = 0; i < data_size; i++){
+    Serial.print(data[i], HEX);
+    Serial.print(" ");
+  }
+  Serial.println("");
+}
+
+void error(String message, byte *data, int data_size)
+{
+  Serial.println("#ERROR");
+  Serial.print(message);
+  for (int i = 0; i < data_size; i++){
+    Serial.print(data[i], HEX);
+    Serial.print(" ");
+  }
+  Serial.println("");
+}
+#endif

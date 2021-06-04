@@ -54,6 +54,7 @@ class ZUHF_CC1101
 	/* Custom Functions */
 		void UpdateFifo(byte *data, int nbytes);
 		void SendCW(byte duration);
+        //void SendCW(byte duration, byte lastbyteduration);
 		void SendCWBurst(byte duration);
 		void SendByte(byte value);
 		void SendIdle(byte duration);

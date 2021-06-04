@@ -276,6 +276,7 @@ void SPI_UART_CC1101::RegConfigSettings(void){
 	 * for ASK/OOK Settings also see https://www.ti.com/lit/an/swra215e/swra215e.pdf
    * ****************************************************************************** */
 	SpiWriteReg(CC1101_MDMCFG4,   0x8B); // 203kHz Filter Bandwidth
+    //SpiWriteReg(CC1101_MDMCFG4,   0x5B); // 325kHz Filter Bandwidth
 	SpiWriteReg(CC1101_FSCTRL1,   0x0F);
 	SpiWriteReg(CC1101_FREND1,    0xB6);
 	SpiWriteReg(CC1101_TEST2,     0x81);

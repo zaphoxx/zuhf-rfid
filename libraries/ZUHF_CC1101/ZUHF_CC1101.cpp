@@ -303,6 +303,38 @@ void ZUHF_CC1101::SendCW(byte duration)
 }
 
 /****************************************************************
+* FUNCTION NAME: SendCW
+* FUNCTION     : send continous high signal
+* INPUT        : duration: number of bytes to send where 1 byte corresponds 8*12.5µs = 100µs
+*              : lastbyteduration: number of bits of last byte where 1 bit = 12.5µs (bigEndian notation)
+* OUTPUT       : none
+*****************************************************************/
+/*
+void ZUHF_CC1101::SendCW(byte duration, byte lastbyteduration)
+{
+	byte lastbyte = 0x00;
+    byte mask = 0x80;    
+    if (lastbyteduration < 8)
+    {
+        for (int j = 0; j < lastbyteduration; j++)
+        {
+            lastbyte = lastbyte | mask;
+            mask = mask >> 1;
+        }
+        
+        for (int i = 0; i < duration-1; i++)
+	    {
+            UpdateFifo(CW, 1);
+        }
+        UpdateFifo(&lastbyte, 1);
+    }
+    else
+    {
+        SendCW(duration);
+    }
+}
+*/
+/****************************************************************
 * FUNCTION NAME: SendCWBlock
 * FUNCTION     : send continous high signal of duration n
 * INPUT        : duration: number of bytes to send where 1 byte corresponds 8*12.5µs = 100µs
