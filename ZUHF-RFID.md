@@ -226,7 +226,7 @@ CRC16:        0x65 0x1e
 So to write data you need to provide the ```-write``` parameter and the ```-data <data>``` parameter with the data to write. The data needs to be in hex format MSB first and the number of bytes provided needs to be a multiple of 2 (n words) (if you don't provide the -n parameter it will calculate n based on the provided data value). You can verify if the write was successful by trying to read the location after the write using
 
 ```bash
-─# ./zuhf-cli.py -p /dev/ttyACM0 -read -data deadbeef -mem 3 -n 2
+─# ./zuhf-cli.py -p /dev/ttyACM0 -read -mem 3 -n 2
 
  @@@@@@@@ @@@  @@@ @@@  @@@ @@@@@@@@      @@@@@@@  @@@@@@@@ @@@ @@@@@@@
       @@! @@!  @@@ @@!  @@@ @@!           @@!  @@@ @@!      @@! @@!  @@@
