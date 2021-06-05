@@ -1,6 +1,13 @@
 # zuhf-rfid
 Blog about my journey investigation uhf-rfid with arduino and cc1101. This project has already been going on with more are less time spent for a few weeks and I decided now to put the information I learned along the way down as a resource mainly for myself but also to make it available for others who might be interested. 
 [Updated 05.03.2021] Image below shows the UHF-Reader. It works for the currently implemented commands (see which commands at the bottom of the page). I started putting a HOWTO guide (https://github.com/zaphoxx/zuhf-rfid/blob/main/HOWTO.md) together in case you are interested in going into that direction. As of today Part1 of the HOWTO is ready, any feedback for improvements is highly appreciated. Other than that enjoy. Further sections will be added in the future.
+[Updated 05.06.2021] The reader supports now the following commands:
+* READ - read from any unlocked memory area
+* WRITE - write to any unlocked memory area
+* LOCK - lock specific memory areas as defined in https://www.gs1.org/sites/default/files/docs/epc/gs1-epc-gen2v2-uhf-airinterface_i21_r_2018-09-04.pdf
+* ACCESS - read/write/lock password protected memory areas
+The commands have been tested on the following types of tags: Impinj Monza 4E, Alien Higgs 3, Impinj Monza R6 (limited functionality as there is no user memory and effectively not reserved memory, lock mechanism works differently for this chip; see also chips datasheet). I have another couple of tags where the commands work all fine but I do not have any information on the chip type for these. 
+
 If you already put the hardware together and you just want to get started reading/writing to a tag you can refer to (https://github.com/zaphoxx/zuhf-rfid/blob/main/ZUHF-RFID.md) which briefly describes how to use the cli zuhf-cli.py.
 
 ![UHF-READER-SHIELD](https://github.com/zaphoxx/zuhf-rfid/blob/main/images/uhfreader2.png)
