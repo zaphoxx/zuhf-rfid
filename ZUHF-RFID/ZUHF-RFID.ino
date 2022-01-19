@@ -50,7 +50,7 @@ CRGB leds[NUM_LEDS];
 //#define RN16_LEN 4 // FM0 encoded RN16 length is here 4Bytes 
 
 /* ************* MAIN DEFAULT CONTROL SETTINGS ************* */
-#define TX_POWER    0x16 // 0x11 --> 0x11/0x80 (5.2 dBm) 0x12/0x27 (-9.8 dBm) 0x13/0x67 (-5.0 dBm) 0x14/0x50 (-0.3 dBm) 0x16/0xc0 (10.7 dBm) byte PaTable[8] = {0x00,0x80,0x27,0x67,0x50,0x80,0xc0,0x00}; //
+#define TX_POWER    0x11 // 0x11 --> 0x11/0x80 (5.2 dBm) 0x12/0x27 (-9.8 dBm) 0x13/0x67 (-5.0 dBm) 0x14/0x50 (-0.3 dBm) 0x16/0xc0 (10.7 dBm) byte PaTable[8] = {0x00,0x80,0x27,0x67,0x50,0x80,0xc0,0x00}; //
 #define REPETITIONS 100
 #define AGC2        0x03
 #define AGC0        0x90
@@ -98,7 +98,7 @@ byte cw2          = CW2;
 byte sync1,sync0;
 /* ******************************************** */
 
-
+int T5 = 32;
 
 //DATA_BUFFER databuffer;
 TAG_INFO tags_read[1000];
@@ -148,8 +148,11 @@ byte words;
 byte cmd_bytes[256];
 byte serial_data;
 String cmd_string;
-//M_STATES current_Menu;
-boolean write_flag=false, read_flag=false, block_flag=false, lock_flag=false, epc_found=false, monza_flag=true, access_flag;
+
+/* mode flags */
+boolean tearlock_flag=false, tears_flag=false, write_flag=false, read_flag=false, block_flag=false, lock_flag=false, epc_found=false, monza_flag=true, access_flag;
+
+
 EPC_DATA tag_data;
 
 /* MEMBLOCK READ/WRITE VARS */
@@ -162,9 +165,17 @@ byte mask_bits[10], action_bits[10];
 uint16_t lpass,hpass;
 byte wordcount=0;
 
+/* TEARS vars */
+int curr_writes;
+int num_writes;
+int off_writes;
+int bytes_to_send;
+int bits_to_send;
+byte last_byte;
+int delay_microsec;
+word tearword;
 
 void(* resetFunc) (void) = 0;
-
 
 void setup()
 {
@@ -187,15 +198,20 @@ void setup()
   //logo();
   reader_state = R_WAIT;
   counter = 0;
-//  current_Menu = M_MAIN;
+  //current_Menu = M_MAIN;
+
   read_flag = false;
   write_flag = false;
   block_flag = false;
   lock_flag = false;
   access_flag = false;
+  tears_flag = false;
+  
   lpass = 0;
   hpass = 0;
+  
   for (int i = 0; i < sizeof(data); i++) data[i] = 0;
+
 }
 
 
@@ -204,34 +220,29 @@ void loop()
   switch(reader_state)
   {
     case R_INIT:
-      /* reset all necessary variables */
-      
       counter = 0;
       epc_found = 0;
       tags_found = 0;
+
+      // Initialize RF-Units
       tx_version = TX_UNIT.Init(); // Based on SPI_UART_CC1101.h lib
-      rx_version = RX_UNIT.Init(); // Based on Arduino SPI.h and ZUHF_CC1101.h lib
-      
-      /* quick check if modules version looks ok, if modules do not work properly the version value will not match */
-      //tx_version = TX_UNIT.Init(); // Based on SPI_UART_CC1101.h lib
-      //rx_version = RX_UNIT.Init(); // Based on Arduino SPI.h and ZUHF_CC1101.h lib
+      rx_version = RX_UNIT.Init(); // Based on Arduino SPI.h and ZUHF_CC1101.h lib     
       delay(10);
-      tx_version = TX_UNIT.SpiReadStatus(CC1101_VERSION);
-      rx_version = RX_UNIT.SpiReadStatus(CC1101_VERSION);
       
+      // Quick Check if modules version looks ok, if modules do not work properly the version value will usually not match */
+      tx_version = TX_UNIT.SpiReadStatus(CC1101_VERSION); // Based on SPI_UART_CC1101.h lib
+      rx_version = RX_UNIT.SpiReadStatus(CC1101_VERSION); // Based on Arduino SPI.h and ZUHF_CC1101.h lib
       if ((tx_version == 0x14 or tx_version == 0x04) and (rx_version == 0x14 or rx_version == 0x04))
       {
         Serial.println("[CC1101] Modules Check - OK");
-        //Serial.println("[TX] SFTXON");
         TX_UNIT.SpiStrobe(CC1101_SFSTXON);
-        //Serial.println("[RX] SFTXON");
         RX_UNIT.SpiStrobe(CC1101_SFSTXON);
 
         n_tag_responses = 0;
         /* syncronization word - preamble + Framesync */
         sync1 = 0xAD;
         sync0 = 0x23;
-          /* ************************ RX UNIT REG SETTINGS ************************* */
+        /* ************************ RX UNIT REG SETTINGS ************************* */
         RX_UNIT.SpiWriteReg(CC1101_MCSM0,0x28); 
         RX_UNIT.SpiWriteReg(CC1101_MCSM1,0x35); 
         RX_UNIT.SpiWriteReg(CC1101_FREND0,tx_power);
@@ -246,8 +257,17 @@ void loop()
         RX_UNIT.SpiWriteReg(CC1101_AGCCTRL1, 0x00);
         RX_UNIT.SpiWriteReg(CC1101_AGCCTRL0, agc0);
         RX_UNIT.SpiWriteReg(CC1101_FIFOTHR, 0x07);
-        /* ************************ RX UNIT REG SETTINGS ************************* */
-  
+        /*
+        RX_UNIT.SpiWriteReg(CC1101_FREQ2,0x21);
+        RX_UNIT.SpiWriteReg(CC1101_FREQ1,0x44);
+        RX_UNIT.SpiWriteReg(CC1101_FREQ0,0xec);
+        */
+        /* ************************ TX UNIT REG SETTINGS ************************* */
+        /*
+        TX_UNIT.SpiWriteReg(CC1101_FREQ2,0x21);
+        TX_UNIT.SpiWriteReg(CC1101_FREQ1,0x44);
+        TX_UNIT.SpiWriteReg(CC1101_FREQ0,0xec);
+        */
         Serial.print("TX power      : ");Serial.println(tx_power,HEX);
         Serial.print("AGC2          : ");Serial.println(agc2,HEX);
         Serial.print("AGC0          : ");Serial.println(agc0,HEX);
@@ -257,12 +277,12 @@ void loop()
         leds[1] = CRGB::Magenta;
         FastLED.show();
         delay(500);
-        Serial.println("**** START RUN ****");
+        debug("[START]");
         reader_state = R_START;  
       }
       else
       {
-        Serial.println("[CC1101] Error on CC1101 module initialization");
+        debug("[CC1101] Error on CC1101 module initialization");
         reader_state = R_WAIT;
         delay(100);
       }
@@ -276,13 +296,11 @@ void loop()
       FastLED.show();
       /* Set modules into idle mode */
       /*this section is necessary otherwise the rx-module will not capture any more signals */
-      /* begin */
-      while ((TX_UNIT.SpiReadStatus(CC1101_TXBYTES) & 0x7f) > 0);
       /* Terminate TX Session - Go Into Standby */
+      while ((TX_UNIT.SpiReadStatus(CC1101_TXBYTES) & 0x7f) > 0);
       TX_UNIT.SpiStrobe(CC1101_SIDLE);
       RX_UNIT.SpiStrobe(CC1101_SIDLE);
       delay(5);
-      /* end */
       
       for (int i = 0; i < 16; i++) RN16_Bits[i] = 0;
       for (int i = 0; i < 16; i++) HANDLE_Bits[i] = 0;
@@ -300,13 +318,19 @@ void loop()
       }
       break;
 
-    /* QUERY REQUEST
-     * R_QUERY: 
-     * 1) send QUERY request and read tag response (RN16)
-     * 2) send ACK and read tags EPC response / if only EPC reading then this is the last step otherwise see 3)
-     * 3) send REQ_RN and transition tag into OPEN/SECURED state (depending on access passwd setting)
-     * 4) delegate to next command (READ, WRITE, LOCK, ACCESS etc.)
-     */
+/* ********************************************************************** */
+/* ****************************** QUERY CMD ***************************** */
+/* ********************************************************************** */
+/* QUERY REQUEST
+ * R_QUERY: 
+ * 1) send QUERY request and read tag response (RN16)
+ * 2) send ACK and read tags EPC response / if only EPC reading then this is 
+ *    the last step otherwise see 3)
+ * 3) send REQ_RN and transition tag into OPEN/SECURED state (depending on 
+ *    access passwd setting)
+ * 4) delegate to next command (READ, WRITE, LOCK, ACCESS etc.)
+ */
+ /* ********************************************************************** */
     case R_QUERY:
       if (counter < repetitions)
       {
@@ -332,7 +356,7 @@ void loop()
           LED_RED_ON;
           //debug("[+] EPC Found!");
             
-          if ( !read_flag && !write_flag && !lock_flag ){
+          if ( !read_flag && !write_flag && !lock_flag && !tears_flag && !tearlock_flag){
             counter = repetitions;
           }
           else
@@ -361,13 +385,23 @@ void loop()
               }
               else if(write_flag)
               {
-                //debug("[WRITE] *");
                 reader_state = R_WRITE;
                 counter = 0;
               }
               else if(lock_flag)
               {
                 reader_state = R_LOCK;
+                counter = 0;
+              }
+              else if(tears_flag)
+              {
+                reader_state = R_TEARS;
+                counter = 0;
+              }
+              else if(tearlock_flag)
+              {
+                reader_state = R_TEARLOCK;
+                debug("[R_TEARLOCK]");
                 counter = 0;
               }
               else
@@ -409,6 +443,9 @@ void loop()
       
       break;
 
+/* ********************************************************************** */
+/* ****************************** ACCESS CMD **************************** */
+/* ********************************************************************** */
     case R_ACCESS:
       /* access sequence
        * 1) send req_rn / recv new RN16
@@ -492,6 +529,9 @@ void loop()
         }     
       break;
 
+/* ********************************************************************** */
+/* ****************************** WRITE CMD ***************************** */
+/* ********************************************************************** */
     case R_WRITE:
       /* ***** WRITE DATA TO TAG ***** */
       if (counter < repetitions)
@@ -533,6 +573,9 @@ void loop()
       counter = repetitions;
       break;
 
+/* ********************************************************************** */
+/* ****************************** READ CMD ****************************** */
+/* ********************************************************************** */
     case R_READ:
       TX_UNIT.SendCW(16);
       if (counter < repetitions)
@@ -564,7 +607,9 @@ void loop()
       }
       break;
 
-
+/* ********************************************************************** */
+/* ****************************** LOCK CMD ****************************** */
+/* ********************************************************************** */
     case R_LOCK:
       /* ******** LOCK CMD ******** */
       if (counter < repetitions)
@@ -593,53 +638,137 @@ void loop()
       }
       break;
 
-
-    case R_QUERY_BAK:
-      send_default_query();
-      if (read_RN16(RN16_Bits))
+/* ********************************************************************** */
+/* ******************************* TEARING ****************************** */
+/* ********************************************************************** */
+   case R_TEARS:
+      reader_state = R_INIT;
+      counter = 0;
+      LED_BLUE_OFF;
+      LED_RED_OFF;
+      
+      bits_to_send = (curr_writes + off_writes) % 8;
+      last_byte = 0xff << (8 - bits_to_send);
+      bytes_to_send = (curr_writes + off_writes) / 8;
+      for (int i = 0; i < sizeof(data); i++) data[i]=1;
+      //TX_UNIT.SendCW(64);
+      if (curr_writes != 0)
       {
-        LED_BLUE_ON;
-        /* ***************** SEND ACK **************** */
-        send_ack(RN16_Bits);
-        /* ******** CAPTURE TAGS EPC RESPONSE ******** */  
-        if(read_epc(&tag_data))
+        for (int i = 0; i < sizeof(data); i++) data[i]=1;
+        /* **** READ DATA FROM TAG ***** */
+        send_read(memoryblock,blockaddr,nWords,HANDLE_Bits);      
+        if (read_data(data, nWords)) //add 4 bytes for crc16 and handle + 1 byte because of the 0 header
         {
-          LED_RED_ON;
-          /* ******** START ACCESS SEQUENCE ************ */
-          send_req_rn(RN16_Bits);
-          if (read_Handle(HANDLE_Bits))
-          { 
-            TX_UNIT.SendCW(50);
-            byte memoryblock = 3;
-            /* ***** WRITE DATA TO TAG ***** */
-            send_req_rn(HANDLE_Bits);
-            if(read_Handle(RN16_Bits)){
-              send_write(memoryblock, 0, 0xFECA, HANDLE_Bits, RN16_Bits);
-              if (search_write_ack())
-              {
-                leds[0] = CRGB::Blue;
-                leds[1] = CRGB::Green;
-                FastLED.show();
-              }
-            }
-            /* **** READ DATA FROM TAG ***** */
-            for (byte i = 0; i < 8;i++)
-            {
-              words = 1;
-              send_read(memoryblock,i,words,HANDLE_Bits);
-              byte data[64];
-              byte data_size = words * 2;
-              read_data(data, words); //add 4 bytes for crc16 and handle + 1 byte because of the 0 header
-            }
-            send_ack(HANDLE_Bits);
+          Serial.println("#READDATA2");
+          Serial.write(data,nWords*2);
+          debug("-- data2 --");
+          reader_state = R_INIT;
+        }
+        else
+        {
+          debug("[ERROR] Error in sequence @READ - After Tear Write");
+        }
+        if (curr_writes >= (num_writes))
+        {
+          counter = repetitions;
+          reader_state = R_POWERDOWN;
+          break;
+        }
+      }
+      
+      if (reader_state != R_POWERDOWN)
+      {
+        send_req_rn(HANDLE_Bits);
+        if(read_Handle(RN16_Bits))
+        {
+          dataword = 0xffff;
+          send_write(memoryblock, blockaddr+(nWords-1), dataword, HANDLE_Bits, RN16_Bits);
+          if (search_write_ack())
+          {
+            //TX_UNIT.SendCW(64);
+            LED_RED_ON;
           }
         }
-        //TX_UNIT.SendCW(50);  
+        /* END initial WRITE */
+        /* BEGIN READ */
+        for (int i = 0; i < sizeof(data); i++) data[i]=1;
+        /* **** READ DATA FROM TAG ***** */
+        send_read(memoryblock,blockaddr,nWords,HANDLE_Bits);      
+        if (read_data(data, nWords)) //add 4 bytes for crc16 and handle + 1 byte because of the 0 header
+        {
+          Serial.println("#READDATA1");
+          Serial.write(bits_to_send + (bytes_to_send * 8));
+          Serial.write(data,nWords*2);
+        }
+        else
+        {
+          debug("[ERROR] Error in sequence @READ - After Init Write");
+          //reader_state = R_POWERDOWN;
+        }
+        TX_UNIT.SendCW(64);
+        /* BEGIN teared WRITE */
+        send_req_rn(HANDLE_Bits);
+        debug("[HANDLE TEAR WRITE 1 >>");
+        if(read_Handle(RN16_Bits))
+        {
+          debug("[TEAR WRITE 1 >>");
+          dataword = tearword;
+          send_write(memoryblock, blockaddr, dataword, HANDLE_Bits, RN16_Bits);
+          debug("[TEAR WRITE 2 >>");
+          // Here the tearing needs to start looping
+          // currently increments in bytes where 1 byte corresponds to ~100µs
+          // 1bit ~12.5µs
+          
+          TX_UNIT.SendCW(bytes_to_send);
+          TX_UNIT.SendByte(last_byte);
+          // wait until fifo is empty
+          //while ((TX_UNIT.SpiReadStatus(CC1101_TXBYTES) & 0x7f) > 0);
+          debug("SEND Idle");
+          TX_UNIT.SendIdle(64);
+          //debug(String(bits_to_send));
+          LED_RED_ON;LED_BLUE_ON;
+        }
       }
-      reader_state = R_POWERDOWN;
+      /* END teared WRITE */
+      
+      curr_writes++;  
+      LED_BLUE_OFF;
+      LED_RED_OFF;
       break;
 
+/* ********************************************************************** */
+/* ******************************* TEARLOCK ***************************** */
+/* ********************************************************************** */
 
+   case R_TEARLOCK:
+      reader_state = R_INIT;
+      /* ******** LOCK CMD ******** */
+      debug(String(curr_writes));
+      debug(String(off_writes));
+      debug(String(num_writes));
+      //bytes_to_send = curr_writes + off_writes;
+      bits_to_send = (curr_writes + off_writes) % 8;
+      last_byte = 0xff << (8 - bits_to_send);
+      bytes_to_send = (curr_writes + off_writes) / 8;
+      send_lock(mask_bits, action_bits, HANDLE_Bits);
+      TX_UNIT.SendCW(bytes_to_send);
+      TX_UNIT.SendByte(last_byte);
+      while ((TX_UNIT.SpiReadStatus(CC1101_TXBYTES) & 0x7f) > 0);
+      debug("SEND NullBytes");
+      TX_UNIT.SendIdle(60);
+      if (curr_writes >= (num_writes))
+        {
+          counter = repetitions;
+          reader_state = R_POWERDOWN;
+          break;
+        }
+      curr_writes++;
+      break;
+
+    
+/* ********************************************************************** */
+/* ****************************** POWERDOWN ***************************** */
+/* ********************************************************************** */
     case R_POWERDOWN:
       if (epc_found){
         Serial.println("#TAGDATA");
@@ -685,6 +814,11 @@ void loop()
       {
         cmd_string = Serial.readStringUntil('#');
         tx_power = (byte) cmd_string.toInt();
+      }
+      else if (cmd_string.equals("T5"))
+      {
+        cmd_string = Serial.readStringUntil('#');
+        T5 = cmd_string.toInt();
       }
       // Reading data from memory blocks
       else if (cmd_string.equals("READ"))
@@ -831,6 +965,71 @@ void loop()
         Serial.readBytes(action_bits,10);
         
         debug("[LOCKACCESS]");
+      }
+           else if (cmd_string.equals("TEARS"))
+      {
+        tears_flag = true;
+        
+        cmd_string = Serial.readStringUntil('#');
+        memoryblock = (byte) cmd_string.toInt();
+        
+        cmd_string = Serial.readStringUntil('#');
+        blockaddr = (byte) cmd_string.toInt();
+        
+        cmd_string = Serial.readStringUntil('#');
+        nWords = (byte) cmd_string.toInt();
+        
+        for (int i = 0; i < sizeof(data); i++) data[i] = 0;
+        Serial.readBytes(data,nWords * 2);
+        tearword = data[1] << 8 | data[0];
+        /* dummy read */
+        cmd_string = Serial.readStringUntil('#');
+        
+        /* read values for tearing */
+        cmd_string = Serial.readStringUntil('#');
+        int start_delay = cmd_string.toInt();
+        
+        cmd_string = Serial.readStringUntil('#');
+        int delta_delay = cmd_string.toInt();
+
+        cmd_string = Serial.readStringUntil('#');
+        int end_delay = cmd_string.toInt();
+
+        cmd_string = Serial.readStringUntil('#');
+        num_writes = cmd_string.toInt();
+        
+        /* set curr_writes and num_writes */
+        curr_writes = 0;
+        off_writes = start_delay;
+        
+        debug("[TEARS]");
+        
+        /*
+        # sequence to read from arduino
+        # TEARS - signalid
+        # memblock
+        # block_addr
+        # number of words (defaults to 1)
+        # start, delta and end delay values
+        */
+      }
+      else if (cmd_string.equals("TEARLOCK"))
+      {
+        tearlock_flag = true;
+
+        cmd_string = Serial.readStringUntil('#');
+        off_writes = cmd_string.toInt();
+        //debug(String(off_writes));
+        
+        cmd_string = Serial.readStringUntil('#');
+        num_writes = cmd_string.toInt();
+        //debug(String(num_writes));
+
+        Serial.readBytes(mask_bits,10);
+        Serial.readBytes(action_bits,10);
+
+        debug(mask_bits,10);
+        debug("[+] TEARLOCK MODE");
       }
       else
       { 

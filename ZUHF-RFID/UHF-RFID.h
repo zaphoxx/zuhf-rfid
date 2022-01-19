@@ -12,6 +12,7 @@
 
 extern TAG_INFO tags_read[1000];
 extern int tags_found;
+extern int T5;
 
 struct EPC_DATA
 {
@@ -789,7 +790,7 @@ bool read_Handle(byte *rn_bits){
   TX_UNIT.SendCW(14);
   while(TX_GDO0_STATE){
     if(RX_GDO0_STATE){
-      TX_UNIT.SendCW(5);
+      TX_UNIT.SendCW(6);
       while(RX_GDO0_STATE);
       RX_UNIT.SpiReadBurstReg(CC1101_RXFIFO, rxbuffer, 8);
       found = true;
@@ -806,10 +807,13 @@ bool read_Handle(byte *rn_bits){
     if(check_crc16(HANDLE_DATA, sizeof(HANDLE_DATA)))
     {
       memcpy(rn_bits, HANDLE_DATA_Bits, 16);
-      Serial.println("[READ RN16/HANDLE] OK");
+      debug("[READ RN16/HANDLE] OK");
       crc16_ok = true;
-    }else{
+    }
+    else
+    {
       crc16_ok = false;
+      debug("[READ RN16/HANDLE] ERROR");
     }
   }
   return crc16_ok;
@@ -950,7 +954,7 @@ bool read_data(byte *data, byte nwords)
       error("[READ] " + ERRORCODE[data_bytes[0]]);
       for (int i = 0; i < (nwords*2); i++)
       {
-        data[i] = 0xff;
+        data[i] = 0xcc;
       }
     }
   }else{
@@ -982,7 +986,16 @@ bool search_write_ack()
   RX_UNIT.SpiWriteReg(CC1101_PKTLEN, 10);
   RX_UNIT.SpiStrobe(CC1101_SRX);
   TX_UNIT.SendCW(8);
-  TX_UNIT.SendCW(64);
+  // if the following CW duration is too long the write executes but the tag
+  // will report with an error message instead an ok.
+  // it will depend on the tag/chip you use e.g.
+  // safe values:
+  // NXP UCODE    - TX_UNIT.SendCW(32);
+  // ALIEN HIGGS3 - TX_UNIT.SendCW(64); (needs more time for response on write)
+  // a value of 48 seems to work for both tag types - but be aware that this might
+  // need an update for other cards; value can be controlled via the global int T5
+  
+  TX_UNIT.SendCW(T5);
   while(TX_GDO0_STATE)
   {
     if(RX_GDO0_STATE)
@@ -1015,12 +1028,14 @@ bool search_write_ack()
     else
     {
       crc_ok = false;
+      debug("crc: false");
     }
   }else{
     TX_UNIT.SendCW(8);
     uint8_t errorcode;
     generate_bytes(&errorcode,databuffer+1,8);
     error("[WRITE] Error: " + ERRORCODE[errorcode]);
+    crc_ok = false;
   }
   return crc_ok;
 }
