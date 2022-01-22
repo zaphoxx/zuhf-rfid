@@ -886,12 +886,9 @@ bool read_epc(EPC_DATA *tag_epc){
       memcpy(tag_epc->crc16, epc_bytes + 14, 2); 
       crc_ok = true;
       /* ---------------------------------------------------------*/
-      /* TODO: temporarily in - needs to be removed in the future */
-      //collect_epc_data(epc_bytes);
-      /* ---------------------------------------------------------*/
-      //debug("[READ EPC] OK");
+      
     }else{
-      //Serial.println("[READ EPC] ERROR - CRC ERROR");
+      //("[READ EPC] ERROR - CRC ERROR");
     }
   }else{
     //Serial.println("[READ EPC] ERROR - EPC NOT FOUND");

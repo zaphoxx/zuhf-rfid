@@ -50,7 +50,7 @@ CRGB leds[NUM_LEDS];
 //#define RN16_LEN 4 // FM0 encoded RN16 length is here 4Bytes 
 
 /* ************* MAIN DEFAULT CONTROL SETTINGS ************* */
-#define TX_POWER    0x11 // 0x11 --> 0x11/0x80 (5.2 dBm) 0x12/0x27 (-9.8 dBm) 0x13/0x67 (-5.0 dBm) 0x14/0x50 (-0.3 dBm) 0x16/0xc0 (10.7 dBm) byte PaTable[8] = {0x00,0x80,0x27,0x67,0x50,0x80,0xc0,0x00}; //
+#define TX_POWER    0x16 // 0x11 --> 0x11/0x80 (5.2 dBm) 0x12/0x27 (-9.8 dBm) 0x13/0x67 (-5.0 dBm) 0x14/0x50 (-0.3 dBm) 0x16/0xc0 (10.7 dBm) byte PaTable[8] = {0x00,0x80,0x27,0x67,0x50,0x80,0xc0,0x00}; //
 #define REPETITIONS 100
 #define AGC2        0x03
 #define AGC0        0x90
@@ -276,7 +276,7 @@ void loop()
         leds[0] = CRGB::Magenta;
         leds[1] = CRGB::Magenta;
         FastLED.show();
-        delay(500);
+        delay(100);
         debug("[START]");
         reader_state = R_START;  
       }
@@ -659,8 +659,10 @@ void loop()
         send_read(memoryblock,blockaddr,nWords,HANDLE_Bits);      
         if (read_data(data, nWords)) //add 4 bytes for crc16 and handle + 1 byte because of the 0 header
         {
-          Serial.println("#READDATA2");
+          Serial.println("#READDATA1");
+          Serial.write(bits_to_send + (bytes_to_send * 8));
           Serial.write(data,nWords*2);
+          debug(data,2);
           debug("-- data2 --");
           reader_state = R_INIT;
         }
@@ -678,6 +680,7 @@ void loop()
       
       if (reader_state != R_POWERDOWN)
       {
+        /*
         send_req_rn(HANDLE_Bits);
         if(read_Handle(RN16_Bits))
         {
@@ -689,10 +692,13 @@ void loop()
             LED_RED_ON;
           }
         }
+        */
         /* END initial WRITE */
         /* BEGIN READ */
+        TX_UNIT.SendCW(64);
         for (int i = 0; i < sizeof(data); i++) data[i]=1;
         /* **** READ DATA FROM TAG ***** */
+        /*
         send_read(memoryblock,blockaddr,nWords,HANDLE_Bits);      
         if (read_data(data, nWords)) //add 4 bytes for crc16 and handle + 1 byte because of the 0 header
         {
@@ -705,7 +711,8 @@ void loop()
           debug("[ERROR] Error in sequence @READ - After Init Write");
           //reader_state = R_POWERDOWN;
         }
-        TX_UNIT.SendCW(64);
+        */
+        
         /* BEGIN teared WRITE */
         send_req_rn(HANDLE_Bits);
         debug("[HANDLE TEAR WRITE 1 >>");

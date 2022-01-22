@@ -117,7 +117,7 @@ def main():
         buffer = b"\xcc\xcc"
         buffer = ser.read(args.n_words * 2)
         print(Fore.CYAN,end='')
-        print(F"{int.from_bytes(n_writes,'little')} - {int.from_bytes(n_writes,'little') * 12.5} µs: "+" ".join(format(x, "02x") for x in buffer),end='')
+        print(F"{int.from_bytes(n_writes,'little')} - {int.from_bytes(n_writes,'little') * 12.5} µs: "+" ".join(format(x, "02x") for x in buffer),end='\n')
         #print(F"{n_writes} µs: "+" ".join(format(x, "02x") for x in buffer),end='')
       elif(line == b"#READDATA2" and args.tears_flag):
         buffer = b"\xcc\xcc"        
@@ -130,7 +130,11 @@ def main():
         buffer = ser.read(args.n_words * 2)
         for i in range(args.n_words):
           print(Fore.CYAN + F"{i+args.block_addr:#08x}: "+" ".join(format(x, "02x") for x in buffer[(i*2):(i*2)+2]))
-        print(Fore.WHITE + "#"*15)
+        print(Fore.WHITE + "#" * args.n_words * 4)
+        for i in range(args.n_words):
+          print(Fore.CYAN + "".join(format(x, "02X") for x in buffer[(i*2):(i*2)+2]),end='')
+        print("\n" + Fore.WHITE + "#" * args.n_words * 4)
+       
       elif (line == b"#TAGDATA"):
         print(Fore.GREEN + "[TAG-DATA]")
         buffer = ser.read(16)
