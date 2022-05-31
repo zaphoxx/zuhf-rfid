@@ -25,27 +25,29 @@ struct TAG_INFO{
 
 enum READER_STATES
 {
-  	R_INIT,
-	R_LOCK,
-	R_WAIT,
-	R_START,
-  	R_ACCESS,
-	R_SELECT,
-	R_QUERY,
-	R_QUERYREP,
-  	R_REQRN,
-  	R_READ,
-  	R_WRITE,
-	R_QUERYADJ,
-	R_SEARCH_RN16,
-	R_ACK,
-	R_NAK,
-	R_CW,
-	R_POWERUP,
-	R_POWERDOWN,
-  	R_READDATA,
-	R_TEST,
-  	R_QUERY_BAK // old code as backup
+  R_INIT,
+  R_LOCK,
+  R_WAIT,
+  R_START,
+  R_ACCESS,
+  R_SELECT,
+  R_QUERY,
+  R_QUERYREP,
+  R_REQRN,
+  R_READ,
+  R_WRITE,
+  R_QUERYADJ,
+  R_SEARCH_RN16,
+  R_ACK,
+  R_NAK,
+  R_CW,
+  R_POWERUP,
+  R_POWERDOWN,
+  R_READDATA,
+  R_TEST,
+  R_QUERY_BAK,  // old code as backup
+  R_TEARS,       // experimental STATE
+  R_TEARLOCK
 };
 
 

@@ -369,13 +369,13 @@ void ZUHF_CC1101::SendIdle(byte duration)
  * definition for TX_GDO0/2_PIO and TX_GDO0/2_STATE needs to be added 
  * if used.
  */
-/*
+
 void ZUHF_CC1101::SendByte(byte value)
 {
-	while(TX_GDO2_STATE);
+	while(RX_GDO2_STATE);
   SpiWriteReg(CC1101_TXFIFO, value);
 }
-*/
+
 
 /****************************************************************
 * FUNCTION NAME: DecodeFM0
