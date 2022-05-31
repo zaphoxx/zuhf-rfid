@@ -112,18 +112,24 @@ def main():
     buffer = b""
     while line != b"#END":
       line = ser.readline().rstrip()
-      if (line == b"#READDATA1" and args.tears_flag):
+      
+      # tear specific 
+      if (line == b"#PRETEAR" and args.tears_flag):
+        print("------")
         n_writes = ser.read(1)
         buffer = b"\xcc\xcc"
         buffer = ser.read(args.n_words * 2)
         print(Fore.CYAN,end='')
-        print(F"{int.from_bytes(n_writes,'little')} - {int.from_bytes(n_writes,'little') * 12.5} µs: "+" ".join(format(x, "02x") for x in buffer),end='\n')
+        print(F"{int.from_bytes(n_writes,'little')} - {int.from_bytes(n_writes,'little') * 12.5} µs: "+" ".join(format(x, "02x") for x in buffer),end='')
         #print(F"{n_writes} µs: "+" ".join(format(x, "02x") for x in buffer),end='')
-      elif(line == b"#READDATA2" and args.tears_flag):
+      elif(line == b"#POSTTEAR" and args.tears_flag):
+        #print("--- post tear ---")        
         buffer = b"\xcc\xcc"        
         buffer = ser.read(args.n_words * 2)
         print(" | " + " ".join(format(x, "02x") for x in buffer))
         print(Fore.WHITE,end='')# + "#"*15)
+        
+      # general read data results
       elif(line == b"#READDATA"):
         print(F"[MEM BLOCK {args.mem_block}]")
         print("#"*15)

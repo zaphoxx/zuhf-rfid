@@ -659,11 +659,11 @@ void loop()
         send_read(memoryblock,blockaddr,nWords,HANDLE_Bits);      
         if (read_data(data, nWords)) //add 4 bytes for crc16 and handle + 1 byte because of the 0 header
         {
-          Serial.println("#READDATA1");
-          Serial.write(bits_to_send + (bytes_to_send * 8));
+          Serial.println("#POSTTEAR");
+          //Serial.write(bits_to_send + (bytes_to_send * 8));
           Serial.write(data,nWords*2);
-          debug(data,2);
-          debug("-- data2 --");
+          //debug(data,2);
+          //debug("-- data2 --");
           reader_state = R_INIT;
         }
         else
@@ -680,11 +680,14 @@ void loop()
       
       if (reader_state != R_POWERDOWN)
       {
+        /* START rewrite WRITE */
+        // before tearing rewrite dataword
         /*
         send_req_rn(HANDLE_Bits);
         if(read_Handle(RN16_Bits))
         {
           dataword = 0xffff;
+          //dataword = tearword;
           send_write(memoryblock, blockaddr+(nWords-1), dataword, HANDLE_Bits, RN16_Bits);
           if (search_write_ack())
           {
@@ -698,11 +701,11 @@ void loop()
         TX_UNIT.SendCW(64);
         for (int i = 0; i < sizeof(data); i++) data[i]=1;
         /* **** READ DATA FROM TAG ***** */
-        /*
+        /* -AAA----------------------------------------------------------------------------------------- */
         send_read(memoryblock,blockaddr,nWords,HANDLE_Bits);      
         if (read_data(data, nWords)) //add 4 bytes for crc16 and handle + 1 byte because of the 0 header
         {
-          Serial.println("#READDATA1");
+          Serial.println("#PRETEAR");
           Serial.write(bits_to_send + (bytes_to_send * 8));
           Serial.write(data,nWords*2);
         }
@@ -711,7 +714,7 @@ void loop()
           debug("[ERROR] Error in sequence @READ - After Init Write");
           //reader_state = R_POWERDOWN;
         }
-        */
+        /* -AAA----------------------------------------------------------------------------------------- */
         
         /* BEGIN teared WRITE */
         send_req_rn(HANDLE_Bits);
@@ -723,7 +726,6 @@ void loop()
           send_write(memoryblock, blockaddr, dataword, HANDLE_Bits, RN16_Bits);
           debug("[TEAR WRITE 2 >>");
           // Here the tearing needs to start looping
-          // currently increments in bytes where 1 byte corresponds to ~100µs
           // 1bit ~12.5µs
           
           TX_UNIT.SendCW(bytes_to_send);
@@ -1010,6 +1012,7 @@ void loop()
         off_writes = start_delay;
         
         debug("[TEARS]");
+        
         
         /*
         # sequence to read from arduino
