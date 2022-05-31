@@ -50,7 +50,7 @@ CRGB leds[NUM_LEDS];
 //#define RN16_LEN 4 // FM0 encoded RN16 length is here 4Bytes 
 
 /* ************* MAIN DEFAULT CONTROL SETTINGS ************* */
-#define TX_POWER    0x16 // 0x11 --> 0x11/0x80 (5.2 dBm) 0x12/0x27 (-9.8 dBm) 0x13/0x67 (-5.0 dBm) 0x14/0x50 (-0.3 dBm) 0x16/0xc0 (10.7 dBm) byte PaTable[8] = {0x00,0x80,0x27,0x67,0x50,0x80,0xc0,0x00}; //
+#define TX_POWER    0x16 // ~10mW
 #define REPETITIONS 100
 #define AGC2        0x03
 #define AGC0        0x90
@@ -150,7 +150,7 @@ byte serial_data;
 String cmd_string;
 
 /* mode flags */
-boolean tearlock_flag=false, tears_flag=false, write_flag=false, read_flag=false, block_flag=false, lock_flag=false, epc_found=false, monza_flag=true, access_flag;
+boolean tearlock_flag=false, tears_flag=false, write_flag=false, read_flag=false, block_flag=false, lock_flag=false, epc_found=false, monza_flag=true, tears_rewrite=false, access_flag;
 
 
 EPC_DATA tag_data;
@@ -245,7 +245,7 @@ void loop()
         /* ************************ RX UNIT REG SETTINGS ************************* */
         RX_UNIT.SpiWriteReg(CC1101_MCSM0,0x28); 
         RX_UNIT.SpiWriteReg(CC1101_MCSM1,0x35); 
-        RX_UNIT.SpiWriteReg(CC1101_FREND0,tx_power);
+        RX_UNIT.SpiWriteReg(CC1101_FREND0,0x16);
         RX_UNIT.SpiWriteReg(CC1101_PKTCTRL0, 0x00);
         RX_UNIT.SpiWriteReg(CC1101_PKTLEN, 0x0c);
         RX_UNIT.SpiWriteReg(CC1101_IOCFG0, 0x06); 
@@ -268,14 +268,8 @@ void loop()
         TX_UNIT.SpiWriteReg(CC1101_FREQ1,0x44);
         TX_UNIT.SpiWriteReg(CC1101_FREQ0,0xec);
         */
-        Serial.print("TX power      : ");Serial.println(tx_power,HEX);
-        Serial.print("AGC2          : ");Serial.println(agc2,HEX);
-        Serial.print("AGC0          : ");Serial.println(agc0,HEX);
-        Serial.print("PktDelay [µs] : ");Serial.println(packet_delay,DEC);
+       
         Serial.print("REPETITIONS   : ");Serial.println(repetitions,DEC);
-        leds[0] = CRGB::Magenta;
-        leds[1] = CRGB::Magenta;
-        FastLED.show();
         delay(100);
         debug("[START]");
         reader_state = R_START;  
@@ -655,20 +649,20 @@ void loop()
       if (curr_writes != 0)
       {
         for (int i = 0; i < sizeof(data); i++) data[i]=1;
-        /* **** READ DATA FROM TAG ***** */
+        // READ DATA AFTER TEARING //
         send_read(memoryblock,blockaddr,nWords,HANDLE_Bits);      
         if (read_data(data, nWords)) //add 4 bytes for crc16 and handle + 1 byte because of the 0 header
         {
           Serial.println("#POSTTEAR");
-          //Serial.write(bits_to_send + (bytes_to_send * 8));
           Serial.write(data,nWords*2);
-          //debug(data,2);
-          //debug("-- data2 --");
           reader_state = R_INIT;
         }
         else
         {
+          Serial.println("#POSTTEAR");
+          Serial.write("\xBA\xDD\xBA\xDD");
           debug("[ERROR] Error in sequence @READ - After Tear Write");
+          reader_state = R_INIT;
         }
         if (curr_writes >= (num_writes))
         {
@@ -682,26 +676,25 @@ void loop()
       {
         /* START rewrite WRITE */
         // before tearing rewrite dataword
-        /*
-        send_req_rn(HANDLE_Bits);
-        if(read_Handle(RN16_Bits))
-        {
-          dataword = 0xffff;
-          //dataword = tearword;
-          send_write(memoryblock, blockaddr+(nWords-1), dataword, HANDLE_Bits, RN16_Bits);
-          if (search_write_ack())
+        if (tears_rewrite){
+          send_req_rn(HANDLE_Bits);
+          if(read_Handle(RN16_Bits))
           {
-            //TX_UNIT.SendCW(64);
-            LED_RED_ON;
+            dataword = 0xffff;
+            send_write(memoryblock, blockaddr+(nWords-1), dataword, HANDLE_Bits, RN16_Bits);
+            if (search_write_ack())
+            {
+              LED_RED_ON;
+            }
           }
         }
-        */
+        
         /* END initial WRITE */
         /* BEGIN READ */
         TX_UNIT.SendCW(64);
         for (int i = 0; i < sizeof(data); i++) data[i]=1;
-        /* **** READ DATA FROM TAG ***** */
-        /* -AAA----------------------------------------------------------------------------------------- */
+        
+        // READ DATA BEFORE TEARING //
         send_read(memoryblock,blockaddr,nWords,HANDLE_Bits);      
         if (read_data(data, nWords)) //add 4 bytes for crc16 and handle + 1 byte because of the 0 header
         {
@@ -711,8 +704,10 @@ void loop()
         }
         else
         {
+          Serial.println("#PRETEAR");
+          Serial.write(bits_to_send + (bytes_to_send * 8));
+          Serial.write("\xBA\xDD\xBA\xDD");
           debug("[ERROR] Error in sequence @READ - After Init Write");
-          //reader_state = R_POWERDOWN;
         }
         /* -AAA----------------------------------------------------------------------------------------- */
         
@@ -1006,6 +1001,9 @@ void loop()
 
         cmd_string = Serial.readStringUntil('#');
         num_writes = cmd_string.toInt();
+
+        cmd_string = Serial.readStringUntil('#');
+        tears_rewrite = cmd_string.toInt();
         
         /* set curr_writes and num_writes */
         curr_writes = 0;

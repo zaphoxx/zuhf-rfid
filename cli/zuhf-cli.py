@@ -29,7 +29,7 @@ def main():
     time.sleep(2)
     
     ser.write(F'REP#{args.repetitions}#'.encode('latin-1'))
-    ser.write(F'TXP#{args.tx_power}#'.encode('latin-1'))
+    #ser.write(F'TXP#{args.tx_power}#'.encode('latin-1'))
     ser.write(F'T5#{args.T5}#'.encode('latin-1'))
     
     '''
@@ -93,8 +93,11 @@ def main():
       # block_addr
       # number of words (defaults to 1)
       # start, delta and end delay values
-      print(b"TEARS#" + F"{args.mem_block}#{args.block_addr}#1#".encode("latin-1") + bytes.fromhex(args.data) + b"#" + F"{args.start_delay}#{args.delta_delay}#{args.end_delay}#{args.num_inc}#".encode("latin-1"))
-      ser.write(b"TEARS#" + F"{args.mem_block}#{args.block_addr}#1#".encode("latin-1") + bytes.fromhex(args.data) + b"#" + F"{args.start_delay}#{args.delta_delay}#{args.end_delay}#{args.num_inc}#".encode("latin-1"))
+      #print(b"TEARS#" + F"{args.mem_block}#{args.block_addr}#1#".encode("latin-1") + bytes.fromhex(args.data) + b"#" + F"{args.start_delay}#{args.delta_delay}#{args.end_delay}#{args.num_inc}#".encode("latin-1"))
+      #ser.write(b"TEARS#" + F"{args.mem_block}#{args.block_addr}#1#".encode("latin-1") + bytes.fromhex(args.data) + b"#" + F"{args.start_delay}#{args.delta_delay}#{args.end_delay}#{args.num_inc}#".encode("latin-1"))
+
+      print(b"TEARS#" + F"{args.mem_block}#{args.block_addr}#1#".encode("latin-1") + bytes.fromhex(args.data) + b"#" + F"{args.start_delay}#{args.delta_delay}#{args.end_delay}#{args.num_inc}#{int(args.rewrite)}#".encode("latin-1"))
+      ser.write(b"TEARS#" + F"{args.mem_block}#{args.block_addr}#1#".encode("latin-1") + bytes.fromhex(args.data) + b"#" + F"{args.start_delay}#{args.delta_delay}#{args.end_delay}#{args.num_inc}#{int(args.rewrite)}#".encode("latin-1"))
       print("*** IT WILL ALL END IN TEARS ... *** [" + bytes.fromhex(args.data).hex() + "]")         
     elif (args.tearlock_flag):
       mask_bytes = bytes([int(x) for x in args.lock_mask])
@@ -115,7 +118,7 @@ def main():
       
       # tear specific 
       if (line == b"#PRETEAR" and args.tears_flag):
-        print("------")
+        #print("------")
         n_writes = ser.read(1)
         buffer = b"\xcc\xcc"
         buffer = ser.read(args.n_words * 2)
@@ -176,7 +179,6 @@ def update_parameters(ser, args):
 def process_args(parser):
     parser.add_argument('-p', dest='port', help='serial port e.g. COM7,COM14', default='/dev/ttyACM0')
     parser.add_argument('-b', dest='baudrate', type=int, help='baudrate of serial', default=250000)
-    parser.add_argument('-tp', dest='tx_power', choices=[0x11,0x12,0x13,0x14,0x15,0x16],type=int,help='tx_power - index', default=0x16)
     parser.add_argument('-t', dest='timeout', help='serial read timeout', type=int, default=3)
     parser.add_argument('-r', dest='repetitions', help='repetitions to run before terminating',type=int, default=1000)
     parser.add_argument('-T5', dest='T5', help='cw duration in bytes after write cmd; e.g. AlienHiggs3 = 64, NXP UCode = 32', type=int, default=64)
@@ -196,6 +198,7 @@ def process_args(parser):
     parser.add_argument('-delta', dest = 'delta_delay', type=int, default=100, help='delta in µs')
     parser.add_argument('-end', dest = 'end_delay', type=int, default=1000, help='end_delay in µs')
     parser.add_argument('-inc', dest = 'num_inc', type=int, default=50, help='number of increments in units of 12.5µs')
+    parser.add_argument('-rewrite', dest = 'rewrite', action='store_true', help='reset data after each tearing ...')
     
     # access / authentication actions    
     parser.add_argument('-access', dest = 'access_pwd', default='00000000')
