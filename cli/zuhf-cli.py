@@ -93,11 +93,11 @@ def main():
       # block_addr
       # number of words (defaults to 1)
       # start, delta and end delay values
-      #print(b"TEARS#" + F"{args.mem_block}#{args.block_addr}#1#".encode("latin-1") + bytes.fromhex(args.data) + b"#" + F"{args.start_delay}#{args.delta_delay}#{args.end_delay}#{args.num_inc}#".encode("latin-1"))
+      #print(b"TEARS#" + F"{args.mem_block}#{args.block_addr}#1#".encode("latin-1") + bytes.fromhex(args.data) + b"#" + F"{args.start_delay}#{args.num_inc}#".encode("latin-1"))
       #ser.write(b"TEARS#" + F"{args.mem_block}#{args.block_addr}#1#".encode("latin-1") + bytes.fromhex(args.data) + b"#" + F"{args.start_delay}#{args.delta_delay}#{args.end_delay}#{args.num_inc}#".encode("latin-1"))
 
-      print(b"TEARS#" + F"{args.mem_block}#{args.block_addr}#1#".encode("latin-1") + bytes.fromhex(args.data) + b"#" + F"{args.start_delay}#{args.delta_delay}#{args.end_delay}#{args.num_inc}#{int(args.rewrite)}#".encode("latin-1"))
-      ser.write(b"TEARS#" + F"{args.mem_block}#{args.block_addr}#1#".encode("latin-1") + bytes.fromhex(args.data) + b"#" + F"{args.start_delay}#{args.delta_delay}#{args.end_delay}#{args.num_inc}#{int(args.rewrite)}#".encode("latin-1"))
+      print(b"TEARS#" + F"{args.mem_block}#{args.block_addr}#1#".encode("latin-1") + bytes.fromhex(args.data) + b"#" + F"{args.start_delay}#{args.num_inc}#{int(args.rewrite)}#".encode("latin-1"))
+      ser.write(b"TEARS#" + F"{args.mem_block}#{args.block_addr}#1#".encode("latin-1") + bytes.fromhex(args.data) + b"#" + F"{args.start_delay}#{args.num_inc}#{int(args.rewrite)}#".encode("latin-1"))
       print("*** IT WILL ALL END IN TEARS ... *** [" + bytes.fromhex(args.data).hex() + "]")         
     elif (args.tearlock_flag):
       mask_bytes = bytes([int(x) for x in args.lock_mask])
@@ -194,10 +194,8 @@ def process_args(parser):
     parser.add_argument('-action', dest = 'lock_action', default = '0000000000')
     
     # arguments for -tears action
-    parser.add_argument('-start', dest = 'start_delay', type=int, default=0, help='start_delay in µs')
-    parser.add_argument('-delta', dest = 'delta_delay', type=int, default=100, help='delta in µs')
-    parser.add_argument('-end', dest = 'end_delay', type=int, default=1000, help='end_delay in µs')
-    parser.add_argument('-inc', dest = 'num_inc', type=int, default=50, help='number of increments in units of 12.5µs')
+    parser.add_argument('-start', dest = 'start_delay', type=int, default=0, help='start offset N * 12.5µs')
+    parser.add_argument('-inc', dest = 'num_inc', type=int, default=50, help='number of tears in increments of 12.5µs')
     parser.add_argument('-rewrite', dest = 'rewrite', action='store_true', help='reset data after each tearing ...')
     
     # access / authentication actions    

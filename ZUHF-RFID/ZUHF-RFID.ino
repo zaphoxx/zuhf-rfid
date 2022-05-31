@@ -1,8 +1,7 @@
 /*  ZUHF-RFID - Arduino Sketch to run a self build UHF RFID Reader (Read/Write)
   Version: v1c - supporting CLI accessibility via zuhf-cli.py    
   Author:       Manfred Heinz
-    Last Update:  01.06.2021
-    Copyright (C) 2021  Manfred Heinz
+    Last Update:  31.05.2022
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -28,7 +27,6 @@
 /* Make sure you are using the DUE specific SPI library */
 /* You need to install the Arduino IDE for WIN10 - do not install one of the hourly builds */
 #include "UHF-RFID.h"
-//#include "ConsoleMenu.h"
 
 #include <FastLED.h>
 
@@ -47,8 +45,6 @@
 CRGB leds[NUM_LEDS];
 /* ************************ */
 
-//#define RN16_LEN 4 // FM0 encoded RN16 length is here 4Bytes 
-
 /* ************* MAIN DEFAULT CONTROL SETTINGS ************* */
 #define TX_POWER    0x16 // ~10mW
 #define REPETITIONS 100
@@ -61,7 +57,6 @@ CRGB leds[NUM_LEDS];
 /* ******************************************** */
 
 /* fast digital write for LEDS */
-// holistical setup
 #define LED_BLUE_ON (PIOB->PIO_SODR = (1 << 14))
 #define LED_RED_ON  (PIOC->PIO_SODR = (1 << 12))
 #define LED_BLUE_OFF (PIOB->PIO_CODR = (1 << 14))
@@ -123,8 +118,6 @@ byte REQ_RN_BITS[40]; // 1 byte command + 2 bytes RN16 + 2 bytes CRC16
 byte RX_BUFFER[512];
 byte EPC_BUFFER[32];
 
-//bool RN16_Found = 0;
-//bool EPC_Flag = 0;
 uint64_t EPCID;
 
 int  buffer_size = 0;
@@ -991,23 +984,15 @@ void loop()
         
         /* read values for tearing */
         cmd_string = Serial.readStringUntil('#');
-        int start_delay = cmd_string.toInt();
+        off_writes = cmd_string.toInt();
         
-        cmd_string = Serial.readStringUntil('#');
-        int delta_delay = cmd_string.toInt();
-
-        cmd_string = Serial.readStringUntil('#');
-        int end_delay = cmd_string.toInt();
-
         cmd_string = Serial.readStringUntil('#');
         num_writes = cmd_string.toInt();
 
         cmd_string = Serial.readStringUntil('#');
         tears_rewrite = cmd_string.toInt();
         
-        /* set curr_writes and num_writes */
         curr_writes = 0;
-        off_writes = start_delay;
         
         debug("[TEARS]");
         
