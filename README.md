@@ -1,5 +1,4 @@
 # Creating Your Own UHF RFID Reader From Scratch
-# ZUHF-RFID by Zaphoxx
 ## TL;DR
 This project has already been going for a while with longer breaks inbetween and I decided to put the information I learned along the way down as a resource mainly for myself but also to make it available for others who might be interested in building a UHF RFID reader/writer from scratch. The image below shows the UHF-Reader. It works fine on very small distances (1-2cm) for the following commands.
 * READ - read from any unlocked memory area
